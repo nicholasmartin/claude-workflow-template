@@ -4,15 +4,11 @@ A lightweight, reusable project management workflow for [Claude Code](https://cl
 
 ## The Story
 
-I started out creating markdown files with Claude Code but without any real structure. PRDs, plan files, progress trackers, all just loose files I'd ask Claude to generate or update. I was trying to figure out how to structure plans that Claude could actually execute, how to track what was done, and how to pick up where I left off between sessions. It got messy fast.
+I started out using Claude Code to generate loose markdown files: PRDs, plans, trackers. No structure, no conventions, just asking Claude to create or update files as I went. It got messy fast, especially when trying to pick up where I left off between sessions.
 
-Then I stumbled on [Cole Medin's video](https://www.youtube.com/watch?v=goOZSXmrYQ4) showing his `.claude/` folder structure with slash commands. Simple, but powerful. It immediately gave me a structure I could build on: commands for planning, executing, committing, and priming context. That was the real starting point.
+Then I found [Cole Medin's video](https://www.youtube.com/watch?v=goOZSXmrYQ4) showing his `.claude/` folder structure with slash commands. Simple, but powerful. That became my foundation. I built on it by integrating everything with GitHub Issues and Projects so `/commit` could auto-close issues, `/plan-feature` could create issues from plans, and `/continue` could scan the board to suggest what to work on next.
 
-After using Cole's approach for a while, I wanted to move beyond my simple markdown tracker file. I wanted everything synced with GitHub Issues and Projects so I could see board status, track phases, and have `/commit` automatically close issues when acceptance criteria were met. That's where most of the original work in this template came from: wiring up `gh` CLI commands, GraphQL mutations for project board fields, label taxonomies, and issue hierarchies.
-
-As a final step, I looked at what other frameworks were out there: [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD), [GSD](https://github.com/gsd-build/gsd-2), [everything-claude-code](https://github.com/affaan-m/everything-claude-code). They're impressive, but they're also really heavy and complex. Way overkill for a solo developer like me. So instead of adopting any of them wholesale, I just analyzed them, compared the best parts, and pulled in specific ideas that made my workflow better without bloating it.
-
-The result is this template. It's lightweight, fast, and focused on one thing: working with Claude Code's structured commands and GitHub Issues/Projects for tracking progress. Nothing more.
+Finally, I looked at the heavier frameworks out there: [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD), [GSD](https://github.com/gsd-build/gsd-2), [everything-claude-code](https://github.com/affaan-m/everything-claude-code). Way too complex for a solo developer. So I just cherry-picked the best ideas (decision protocols, deviation rules, scope enforcement, placeholder scanning) and folded them into this lightweight template. The result is fast, focused, and does one thing well: structured commands with GitHub tracking.
 
 ## Credits & Inspiration
 
@@ -61,86 +57,79 @@ A comprehensive Claude Code plugin collection from an Anthropic hackathon winner
 ### Community
 
 - **[Bjorn](https://glossboss.ink/)** shared the `/continue` session resumption concept with me on a live stream, which became one of the most-used commands in this workflow
-- **[Charles Coppinger](https://www.twitch.tv/thecoppinger)** created [stream-leak-guard](https://github.com/coppinger/stream-leak-guard) for preventing secret leaks during live coding. It's not included in this template by default, but I highly recommend it as an add-on if you stream or share your screen.
-
-### Comparison Matrix
-
-| Feature | Source |
-|---------|--------|
-| `.claude/` folder structure | Cole Medin |
-| Path-scoped rules (`.claude/rules/`) | Cole Medin (WISC "Select") |
-| Scout-pattern reference docs (`.claude/docs/`) | Cole Medin (WISC "Select") |
-| AI context tracking in commits | Cole Medin (WISC "Write") |
-| 3-tier context loading | Cole Medin (WISC framework) |
-| Decision protocol tiers | BMAD-METHOD |
-| Implementation readiness gate | BMAD-METHOD |
-| PRD sync to GitHub issues | BMAD-METHOD |
-| Scope enforcement | GSD |
-| Deviation rules in `/execute` | GSD |
-| Verify/done criteria in plans | GSD |
-| Placeholder scan in `/commit` | everything-claude-code |
-| Anti-slop word list | everything-claude-code |
-| Auto-format hook | everything-claude-code |
-| `/continue` for session resumption | Bjorn (glossboss.ink) |
-| GitHub Projects integration | Original |
-| Label taxonomy & issue hierarchy | Original |
-| `/workflow` modification skill | Original |
-| Prerequisites checker | Original |
-
-### Also Thanks To
-
+- **[Charles Coppinger](https://www.twitch.tv/thecoppinger)** created [stream-leak-guard](https://github.com/coppinger/stream-leak-guard) for preventing secret leaks during live coding. Not included by default, but I highly recommend it if you stream or share your screen.
 - **[Anthropic](https://www.anthropic.com/)** for Claude Code and the slash command, rules, and skills system that makes all of this possible
+
+---
 
 ## What's Included
 
-### Slash Commands (9)
+### Commands at a Glance
 
-| Command | Purpose |
-|---------|---------|
-| `/init-project` | **Project bootstrapper** with prerequisites check, GitHub Project board creation, label setup, field ID capture, and CLAUDE.md generation |
-| `/commit` | Smart commits with placeholder scanning, AI context tracking (`Context:` section in commit body), and automatic GitHub issue updates (comment, check off AC, close) |
-| `/continue` | Resume work sessions by scanning board state, showing In Progress/Ready/Backlog issues, and suggesting next tasks by priority |
-| `/execute` | Execute implementation plans with pre-flight checks (clean git, deps, env), board status updates, and 4-tier deviation rules (fix inline, add validation, fix blockers, stop for architecture) |
-| `/plan-feature` | Create implementation plans through 5-phase process: board context, feature analysis, codebase intelligence, external research, strategic planning. Outputs to `.agents/plans/` with GitHub issue creation |
-| `/status` | Progress review across all phases with board status breakdown, recently completed issues, and suggested next priorities |
-| `/create-prd` | Generate Product Requirements Documents with 15-section template (executive summary through risks & mitigations) |
-| `/create-rules` | Analyze codebase and generate `CLAUDE.md` with detected project type, tech stack, patterns, and conventions |
-| `/prime` | Load project context by reading structure, docs, key files, and recent git activity |
+| Command | What It Does |
+|---------|-------------|
+| `/init-project` | Bootstrap a new project with prerequisites, GitHub board, labels, and CLAUDE.md |
+| `/plan-feature` | Create a detailed implementation plan and GitHub issue from a feature request |
+| `/execute` | Implement a plan step by step with pre-flight checks and deviation rules |
+| `/commit` | Smart commit with placeholder scanning, AI context tracking, and issue updates |
+| `/continue` | Resume a session by scanning board state and suggesting next tasks |
+| `/status` | Progress review across all phases |
+| `/create-prd` | Generate a Product Requirements Document |
+| `/create-rules` | Analyze codebase and generate CLAUDE.md |
+| `/prime` | Load project context into the conversation |
+| `/workflow` | Safely modify the workflow system itself (skill) |
 
-### Skills (1)
+### `/init-project` - Project Bootstrapper
 
-| Skill | Purpose |
-|-------|---------|
-| `/workflow` | Safely modify the workflow system itself. Reads all components, performs impact analysis across all files, presents a change plan, and updates everything in the correct order |
+The entry point for new projects. Checks that required tools are installed (git, gh, jq) across macOS, Windows, and Linux, and offers to install what's missing. Creates a GitHub Project board with Status/Phase/Priority fields, sets up 17 standard labels, captures all generated field IDs, and writes them into every command and config file. If you're adding this to an existing project, it detects existing files and offers to back up, merge, or abort so nothing gets overwritten.
 
-### Configuration Files
+### `/plan-feature` - Feature Planner
+
+Takes a feature request and turns it into a detailed implementation plan through 5 phases: board context, feature analysis, codebase intelligence gathering, external research, and strategic planning. Outputs a plan file to `.agents/plans/` with step-by-step tasks, validation commands, and acceptance criteria. Also creates a GitHub issue with AC checkboxes and adds it to the project board. Searches for duplicate issues before creating new ones.
+
+### `/execute` - Plan Executor
+
+Reads a plan file and implements it step by step. Starts with pre-flight checks (clean git, dependencies installed, env file present). Moves the GitHub issue to "In Progress" on the board. Follows 4-tier deviation rules: fix bugs inline, add boundary validation, fix blockers pragmatically, but stop and ask before architecture changes. Updates the issue with progress as it goes.
+
+### `/commit` - Smart Commit
+
+Scans staged files for TODO/FIXME/HACK/XXX placeholders and empty function bodies before committing. If AI context files (`.claude/rules/`, `.claude/commands/`, `CLAUDE.md`) are in the diff, appends a `Context:` section to the commit body describing what changed in the AI layer. After committing, checks open GitHub issues, comments with the commit hash, checks off completed acceptance criteria, and closes issues when all AC are met.
+
+### `/continue` - Session Resumption
+
+Fetches open issues and project board state, checks git status and recent history, then presents a table grouped by status: In Progress first, then Ready, then Backlog. Suggests what to work on next based on priority and dependencies. Designed so you can start every session with `/continue` and immediately know where things stand.
+
+### `/status` - Progress Review
+
+Pulls data from the GitHub project board and recent git activity. Shows issues per phase, board status breakdown, recently completed issues, and suggests top priority items to pick up next.
+
+### `/create-prd` - PRD Generator
+
+Generates a Product Requirements Document with 15 sections from executive summary through risks and mitigations. Extracts requirements from the conversation, synthesizes them, and writes a structured markdown file.
+
+### `/create-rules` - CLAUDE.md Generator
+
+Analyzes the codebase to detect project type, tech stack, patterns, and conventions, then generates a `CLAUDE.md` file. Also adds decision protocol tiers (low/medium/high stakes), scope enforcement rules, and issue tracking conventions.
+
+### `/prime` - Context Loader
+
+Reads project structure, documentation, key files, config files, and recent git history. Outputs a scannable summary of the project: overview, architecture, tech stack, conventions, and current state.
+
+### `/workflow` - Workflow Modifier (Skill)
+
+Used when changing the workflow system itself. Reads all components (workflow.md, all commands, CLAUDE.md, GitHub Project state), performs impact analysis, presents a change plan, and updates everything in the correct order. Prevents accidentally updating one piece without updating the others.
+
+### Configuration
 
 | File | Purpose |
 |------|---------|
-| `workflow.md` | Source of truth for the entire project management process: board structure, issue hierarchy, label taxonomy, slash command integration, context loading tiers |
-| `CLAUDE-template.md` | Starter template for `CLAUDE.md` generation with sections for overview, stack, commands, structure, patterns, testing, and key files |
+| `workflow.md` | Source of truth for project management: board structure, issue hierarchy, label taxonomy, context loading tiers |
+| `CLAUDE-template.md` | Starter template for `CLAUDE.md` generation |
+| `.claude/rules/components.md` | Starter React/Next.js component conventions (auto-loaded when editing `components/**`) |
+| `.claude/rules/api-routes.md` | Starter API route conventions (auto-loaded when editing `app/api/**`) |
+| `.claude/docs/EXAMPLE.md` | Shows the scout-friendly header format for reference docs |
 
-### Optional Add-ons
-
-| Add-on | Purpose | Link |
-|--------|---------|------|
-| **stream-leak-guard** | Prevents secret leaks during live coding and screen sharing. Created by [Charles Coppinger](https://www.twitch.tv/thecoppinger). | [github.com/coppinger/stream-leak-guard](https://github.com/coppinger/stream-leak-guard) |
-
-### Systems & Patterns
-
-These are built into the commands and workflow, not separate files:
-
-| System | Where | What It Does |
-|--------|-------|--------------|
-| **3-tier context loading** | `workflow.md` section 9 | Tier 1: CLAUDE.md (always loaded), Tier 2: path-scoped rules (auto-loaded), Tier 3: on-demand reference docs (scout headers) |
-| **Issue hierarchy** | `workflow.md` section 3 | Phase Epics > Feature Issues > Task Sub-issues with auto-rolling progress bars |
-| **Decision protocol** | Generated in CLAUDE.md | Low/Medium/High stakes tiers for when to proceed vs ask |
-| **Scope enforcement** | Generated in CLAUDE.md | Rules against silently dropping plan steps |
-| **AI context tracking** | `/commit` | `Context:` section in commit messages when `.claude/` files change, making AI layer evolution visible in `git log` |
-| **Placeholder scanning** | `/commit` | Pre-commit scan for TODO/FIXME/HACK/XXX and empty function bodies in staged files |
-| **Deviation rules** | `/execute` | 4-tier system: fix bugs inline, add boundary validation, fix blockers pragmatically, stop for architecture changes |
-| **Deduplication checks** | `/plan-feature` | Searches existing issues before creating new ones to prevent duplicates |
-| **Prerequisites checker** | `/init-project` | OS detection, required/optional tool checks, install command generation for macOS/Windows/Linux |
+---
 
 ## Quick Start
 
@@ -166,9 +155,7 @@ This will:
 - Create a GitHub Project board with Status, Phase, Priority fields
 - Create 17 standard labels on your repo (phase, type, priority, source)
 - Capture all generated field IDs and write them into workflow.md and commands
-- Analyze your codebase and generate CLAUDE.md with decision protocol, scope enforcement, and issue tracking rules
-
-**Adding to an existing project?** `/init-project` scans for existing `.claude/` files before touching anything. If you already have a CLAUDE.md or custom commands, it'll show you what would be affected and let you choose: back up and overwrite, merge (only add what's missing), or abort.
+- Analyze your codebase and generate CLAUDE.md
 
 ### 3. Start working
 
@@ -179,7 +166,6 @@ This will:
 /execute            # Implement a plan
 /commit             # Commit with issue tracking
 /continue           # Resume work next session
-/status             # Review progress
 ```
 
 ## The Workflow Lifecycle
@@ -243,8 +229,6 @@ After setup, you should:
 
 `/init-project` checks all of these automatically and offers to install what's missing.
 
-### Required
-
 | Tool | Purpose | macOS | Windows | Linux |
 |------|---------|-------|---------|-------|
 | [Claude Code](https://claude.ai/code) | CLI for Claude | `npm i -g @anthropic-ai/claude-code` | same | same |
@@ -252,24 +236,4 @@ After setup, you should:
 | [GitHub CLI](https://cli.github.com/) (`gh`) | Issues, project board, labels | `brew install gh` | `winget install GitHub.cli` | [install guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md) |
 | [jq](https://jqlang.github.io/jq/) | JSON parsing for API responses | `brew install jq` | `winget install jqlang.jq` | `sudo apt install jq` |
 
-After installing, run `gh auth login` to authenticate.
-
-### Optional (checked but not blocking)
-
-| Tool | Purpose | macOS | Windows | Linux |
-|------|---------|-------|---------|-------|
-| [Node.js](https://nodejs.org/) | JS/TS projects | `brew install node` | `winget install OpenJS.NodeJS.LTS` | `nvm install --lts` |
-| [Supabase CLI](https://supabase.com/docs/guides/cli) | DB migrations & type gen | `brew install supabase/tap/supabase` | `npm i -g supabase` | `npm i -g supabase` |
-| [Docker](https://www.docker.com/) | Local databases, containers | `brew install --cask docker` | `winget install Docker.DockerDesktop` | [install guide](https://docs.docker.com/engine/install/) |
-
-**Windows note:** Commands work in Git Bash, PowerShell, and WSL. If running inside WSL, use the Linux column instead.
-
-### What `/init-project` does with this
-
-1. Detects your OS (macOS, Windows, Linux/WSL)
-2. Checks every required tool and config
-3. Shows a pass/fail checklist
-4. For anything missing: shows the install command and asks if you want it run automatically
-5. Re-checks after install to confirm
-6. Only proceeds to GitHub setup once all required checks pass
-7. Reports optional tool versions in the final summary
+After installing, run `gh auth login` to authenticate. On Windows, commands work in Git Bash, PowerShell, and WSL.
