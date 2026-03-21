@@ -129,7 +129,7 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 3. /execute reads the plan file     Implements step by step
    - Moves board item to            "In Progress"
      "In Progress"
-   - Closes task sub-issues         As each step completes
+   - Checks off AC checkboxes        As each step completes
      as steps complete
    |
    v
@@ -236,7 +236,7 @@ Each slash command interacts with GitHub in specific ways:
 ### /execute
 
 - **Reads:** Plan file (passed as argument)
-- **Updates:** Moves board item to "In Progress", closes task sub-issues as steps complete, checks off AC in issue body
+- **Updates:** Moves board item to "In Progress", checks off AC in issue body as steps complete
 - **Post-execution:** Comments on issue with summary, notes readiness for `/commit`
 
 ### /commit

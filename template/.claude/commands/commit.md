@@ -74,4 +74,9 @@ After committing, check if the work completed relates to any open GitHub issues:
    - Comment on the issue with the commit hash: `gh issue comment <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --body "Progress: <commit-hash> - <brief description of what was done>"`
    - If the issue has acceptance criteria checkboxes and any are now satisfied, update the issue body to check them off
    - If ALL acceptance criteria are complete, close the issue: `gh issue close <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --comment "All acceptance criteria met in <commit-hash>."`
+   - **Task sub-issues:** When closing a feature issue, check if it has task sub-issues:
+     ```bash
+     gh api graphql -f query='query { repository(owner: "{{REPO_OWNER}}", name: "{{REPO_NAME}}") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state } } } } }'
+     ```
+     Close any open task sub-issues that have all their AC checked off, commenting with the commit hash on each.
 3. If no open issues are affected, skip this step
