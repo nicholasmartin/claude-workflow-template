@@ -333,6 +333,10 @@ Also check `docs/`, `doc/`, `.github/`, `.claude/` directories for documentation
 
 If documentation is found, list it and read the relevant files to extract project purpose, architecture, and domain context. Use this to write a more accurate Project Overview section in CLAUDE.md.
 
+If a PRD is found outside of `.claude/` (e.g., `docs/prd.md`), offer to copy it to `.claude/PRD.md` which is where `/plan-feature` expects it:
+
+> "I found a PRD at `{path}`. `/plan-feature` reads from `.claude/PRD.md`. Want me to copy it there?"
+
 If no documentation is found, ask the user:
 
 > "I didn't find any existing documentation (PRDs, design docs, etc.). Do you have any files you'd like me to read before generating CLAUDE.md? You can share file paths or just describe the project and I'll work from that."

@@ -11,7 +11,15 @@ Generate a comprehensive Product Requirements Document (PRD) based on the curren
 
 ## Output File
 
-Write the PRD to: `$ARGUMENTS` (default: `.claude/PRD.md`)
+Write the PRD to: `.claude/PRD.md` (or `.claude/PRD-{name}.md` for supplemental PRDs)
+
+If `$ARGUMENTS` is provided, use it as the filename (e.g., `/create-prd PRD-mobile.md` writes to `.claude/PRD-mobile.md`).
+
+**Important:** `.claude/PRD.md` is the standard location that `/plan-feature` reads from. If the project already has a PRD elsewhere (e.g., `docs/prd.md`, `docs/spec.md`), do NOT update it in place. Instead:
+
+1. Read the existing PRD to understand current requirements
+2. Create the new PRD at `.claude/PRD.md`, incorporating the existing content
+3. Tell the user: "I found an existing PRD at `{path}`. I've used it as a starting point and created `.claude/PRD.md` which is where `/plan-feature` expects to find it."
 
 ## PRD Structure
 

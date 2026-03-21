@@ -22,7 +22,7 @@ Transform a feature request into a **comprehensive implementation plan** through
   - `gh issue list --repo {{REPO_OWNER}}/{{REPO_NAME}} --state open --json number,title,labels,state --limit 50`
   - `gh project item-list {{PROJECT_NUMBER}} --owner @me --format json`
 - Check if a GitHub issue already exists for this feature
-- Read the relevant PRD for detailed feature specs (`.claude/PRD.md` or other PRD files)
+- Read the PRD at `.claude/PRD.md` (the standard location). If it doesn't exist, search for PRDs in common locations (`docs/`, project root) and tell the user: "No PRD found at `.claude/PRD.md`. I found `{path}` — run `/create-prd` to create the standard PRD from it."
 - Identify where the requested feature sits in the project roadmap (which phase, which item)
 - Check if there are dependencies on other features that aren't done yet
 - Note any related completed work that provides context
