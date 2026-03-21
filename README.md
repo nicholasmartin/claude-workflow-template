@@ -200,6 +200,29 @@ After setup, you should:
 5. **Add area labels** specific to your project (e.g., `area:auth`, `area:dashboard`, `area:api`)
 6. **Write your first PRD** with `/create-prd`
 
+## Auto-Format on Commit (JS/TS Projects)
+
+For JavaScript and TypeScript projects, `/init-project` offers to set up automatic code formatting on every commit using Husky + lint-staged + Prettier. This is optional but recommended. When configured, every `git commit` (including `/commit`) automatically runs Prettier and ESLint on your staged files before the commit goes through. No more style inconsistencies in your codebase.
+
+If you skip it during setup, you can always add it later:
+
+```bash
+npm install -D prettier husky lint-staged
+npx husky init
+echo "npx lint-staged" > .husky/pre-commit
+```
+
+Then add to your `package.json`:
+
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,css,md}": ["prettier --write"]
+  }
+}
+```
+
 ## File Structure
 
 ```
