@@ -311,7 +311,29 @@ Now replace all `{{PLACEHOLDER}}` values in the workflow files with the real IDs
 
 ### Generate CLAUDE.md
 
-Run the `/create-rules` command logic to analyze the codebase and generate a CLAUDE.md file. If the project is brand new with minimal code, create a starter CLAUDE.md from the template at `.claude/CLAUDE-template.md` with the project name and description filled in.
+Before generating, scan for existing documentation that could provide project context:
+
+```bash
+# Search for PRDs, design docs, architecture docs, READMEs in subdirs
+find . -maxdepth 3 -type f \( \
+  -name "PRD*" -o -name "prd*" -o \
+  -name "README*" -o \
+  -name "ARCHITECTURE*" -o \
+  -name "DESIGN*" -o \
+  -name "SPEC*" -o \
+  -name "*.prd.md" \
+  \) -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null
+```
+
+Also check `docs/`, `doc/`, `.github/`, `.claude/` directories for documentation files.
+
+If documentation is found, list it and read the relevant files to extract project purpose, architecture, and domain context. Use this to write a more accurate Project Overview section in CLAUDE.md.
+
+If no documentation is found, ask the user:
+
+> "I didn't find any existing documentation (PRDs, design docs, etc.). Do you have any files you'd like me to read before generating CLAUDE.md? You can share file paths or just describe the project and I'll work from that."
+
+Then run the `/create-rules` command logic to analyze the codebase and generate a CLAUDE.md file. If the project is brand new with minimal code, create a starter CLAUDE.md from the template at `.claude/CLAUDE-template.md` with the project name and description filled in.
 
 Add these standard sections to the generated CLAUDE.md (adapt based on what `/create-rules` produces):
 

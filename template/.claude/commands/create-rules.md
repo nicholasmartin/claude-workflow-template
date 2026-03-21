@@ -54,6 +54,34 @@ Explore the codebase to understand organization:
 - Any shared code?
 - Configuration locations?
 
+### Scan for Existing Documentation
+
+Search for documentation that could inform the project overview and architecture sections:
+
+```bash
+# Common documentation locations and filenames
+find . -maxdepth 3 -type f \( \
+  -name "PRD*" -o -name "prd*" -o \
+  -name "README*" -o \
+  -name "ARCHITECTURE*" -o \
+  -name "DESIGN*" -o \
+  -name "SPEC*" -o \
+  -name "*.prd.md" \
+  \) -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null
+```
+
+Also check common documentation directories: `docs/`, `doc/`, `.github/`, `.claude/`.
+
+If documentation is found, read it to extract:
+- Project purpose and description
+- Architecture decisions
+- Feature scope and requirements
+- Domain-specific terminology
+
+If no documentation is found, ask the user:
+
+> "I didn't find any existing documentation (PRDs, design docs, architecture docs). Do you have any files you'd like me to read to better understand the project? You can share file paths or just describe the project."
+
 ---
 
 ## Phase 2: ANALYZE
