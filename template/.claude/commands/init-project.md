@@ -219,6 +219,10 @@ gh project list --owner @me --format json
 
 # Parse the output to find the newly created project's number and ID (PVT_...)
 # Store as PROJECT_NUMBER and PROJECT_ID for use in subsequent steps
+
+# Link the project to the repo so it appears on the repo's Projects tab
+# (without this, the project only shows under the user profile)
+gh project link $PROJECT_NUMBER --owner {{REPO_OWNER}} --repo {{REPO_OWNER}}/{{REPO_NAME}}
 ```
 
 ### Create custom fields
