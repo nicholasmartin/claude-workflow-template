@@ -471,7 +471,7 @@ After creating the Plan:
 
 3. **Create task sub-issues (for larger features):**
 
-   If the plan has 5+ implementation steps, offer to create task sub-issues under the feature issue for granular progress tracking. Each task sub-issue maps to a major step in the plan:
+   If the plan has 5+ implementation steps, create task sub-issues under the feature issue for granular progress tracking. Do this automatically without asking. Each task sub-issue maps to a major step in the plan:
 
    - Create each task issue: `gh issue create --repo {{REPO_OWNER}}/{{REPO_NAME}} --title "<task title>" --body "<validation command and done criteria>"`
    - Link as sub-issue of the feature issue via `addSubIssue`
