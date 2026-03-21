@@ -24,7 +24,6 @@ These must be installed for the workflow to function:
 |------|---------------|---------|-----------------|-------------------|-----------------|
 | **git** | `git --version` | Version control, all commands | `brew install git` | `winget install Git.Git` | `sudo apt install git` |
 | **GitHub CLI** | `gh --version` | Issue tracking, project board, labels | `brew install gh` | `winget install GitHub.cli` | See https://github.com/cli/cli/blob/trunk/docs/install_linux.md |
-| **jq** | `jq --version` | JSON parsing for GitHub API responses | `brew install jq` | `winget install jqlang.jq` | `sudo apt install jq` |
 
 ### Required Configuration
 
@@ -64,7 +63,6 @@ echo "Platform: $PLATFORM (package manager: $PKG_MGR)"
 echo "=== Required Tools ==="
 git --version 2>/dev/null && echo "  git: OK" || echo "  git: MISSING"
 gh --version 2>/dev/null | head -1 && echo "  gh: OK" || echo "  gh: MISSING"
-jq --version 2>/dev/null && echo "  jq: OK" || echo "  jq: MISSING"
 
 # Required configuration
 echo "=== Required Configuration ==="
@@ -92,7 +90,6 @@ Show the user a checklist:
 ### Required (must fix before continuing)
 - [x] git 2.x.x
 - [x] GitHub CLI 2.x.x
-- [ ] jq - MISSING
 - [x] gh authenticated
 - [x] Inside git repo
 - [x] Git remote configured
@@ -128,8 +125,8 @@ If only **optional** tools are missing, note them but continue.
 Ask the user for the following (suggest defaults based on the repo if possible):
 
 1. **Project name** (human-readable, e.g., "PeerPull", "TaskFlow")
-2. **Repo owner** (GitHub username or org): detect from `gh repo view --json owner --jq '.owner.login'`
-3. **Repo name**: detect from `gh repo view --json name --jq '.name'`
+2. **Repo owner** (GitHub username or org): detect from `gh repo view --json owner` and parse the login field
+3. **Repo name**: detect from `gh repo view --json name` and parse the name field
 4. **Project description** (one sentence for CLAUDE.md)
 
 Confirm all values with the user before proceeding.
@@ -154,7 +151,7 @@ done
 ls .claude/rules/*.md 2>/dev/null && echo "  .claude/rules/: has existing rules" || echo "  .claude/rules/: empty or not found"
 
 # GitHub Project
-gh project list --owner @me --format json | jq '.projects[] | "\(.number): \(.title)"'
+gh project list --owner @me --format json
 ```
 
 ### Handle conflicts
@@ -213,15 +210,15 @@ Then proceed with the full setup.
 
 ```bash
 # Create the project
-PROJECT_URL=$(gh project create --owner @me --title "{{PROJECT_NAME}} Roadmap" --format json | jq -r '.url')
+# Create the project and capture the output
+gh project create --owner @me --title "{{PROJECT_NAME}} Roadmap" --format json
 
-# Get project number from URL
-PROJECT_NUMBER=$(echo "$PROJECT_URL" | grep -o '[0-9]*$')
+# From the JSON output, extract the project number and node ID
+# Then get the full project details including the node ID
+gh project list --owner @me --format json
 
-# Get project node ID
-PROJECT_ID=$(gh project list --owner @me --format json | jq -r ".projects[] | select(.number == $PROJECT_NUMBER) | .id")
-
-echo "Project created: #$PROJECT_NUMBER (ID: $PROJECT_ID)"
+# Parse the output to find the newly created project's number and ID (PVT_...)
+# Store as PROJECT_NUMBER and PROJECT_ID for use in subsequent steps
 ```
 
 ### Create custom fields
@@ -390,13 +387,13 @@ Run verification checks:
 
 ```bash
 # Verify project exists
-gh project view $PROJECT_NUMBER --owner @me --format json | jq '.title'
+gh project view $PROJECT_NUMBER --owner @me --format json
 
 # Verify fields exist
-gh project field-list $PROJECT_NUMBER --owner @me --format json | jq '.[].name'
+gh project field-list $PROJECT_NUMBER --owner @me --format json
 
 # Verify labels exist
-gh label list --repo $REPO --json name --jq '.[].name' | sort
+gh label list --repo $REPO --json name
 
 # Verify workflow.md has no remaining placeholders
 grep -c '{{' .claude/workflow.md && echo "ERROR: Unresolved placeholders" || echo "OK: All placeholders resolved"
@@ -420,7 +417,6 @@ Report to the user:
 - OS: [detected]
 - git: [version]
 - gh: [version]
-- jq: [version]
 - node: [version or "not installed"]
 - supabase: [version or "not installed"]
 
@@ -455,6 +451,6 @@ Report to the user:
 - The Status field is created by default with options: Todo, In Progress, Done. "Backlog" and "Ready" may need to be added manually in the GitHub UI, or use "Todo" as the backlog equivalent
 - Phase options can be added later as the project grows via `gh project field-edit`
 - Area labels are intentionally NOT created here since they are project-specific. Add them as needed (e.g., `area:auth`, `area:dashboard`)
-- On Windows, `winget` is the default package manager. If the user prefers Chocolatey (`choco`), adapt commands accordingly (e.g., `choco install gh jq git`)
+- On Windows, `winget` is the default package manager. If the user prefers Chocolatey (`choco`), adapt commands accordingly (e.g., `choco install gh git`)
 - On WSL, use Linux install commands since WSL is a Linux environment
 - On Windows, `uname -s` returns `MINGW64_NT-*` in Git Bash or `Linux` in WSL. Use this to pick the right install commands

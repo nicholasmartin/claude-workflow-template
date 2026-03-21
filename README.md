@@ -81,7 +81,7 @@ A comprehensive Claude Code plugin collection from an Anthropic hackathon winner
 
 ### `/init-project` - Project Bootstrapper
 
-The entry point for new projects. Checks that required tools are installed (git, gh, jq) across macOS, Windows, and Linux, and offers to install what's missing. Creates a GitHub Project board with Status/Phase/Priority fields, sets up 17 standard labels, captures all generated field IDs, and writes them into every command and config file. If you're adding this to an existing project, it detects existing files and offers to back up, merge, or abort so nothing gets overwritten.
+The entry point for new projects. Checks that required tools are installed (git, gh) across macOS, Windows, and Linux, and offers to install what's missing. Creates a GitHub Project board with Status/Phase/Priority fields, sets up 17 standard labels, captures all generated field IDs, and writes them into every command and config file. If you're adding this to an existing project, it detects existing files and offers to back up, merge, or abort so nothing gets overwritten.
 
 ### `/plan-feature` - Feature Planner
 
@@ -234,6 +234,5 @@ After setup, you should:
 | [Claude Code](https://claude.ai/code) | CLI for Claude | `npm i -g @anthropic-ai/claude-code` | same | same |
 | [git](https://git-scm.com/) | Version control | `brew install git` | `winget install Git.Git` | `sudo apt install git` |
 | [GitHub CLI](https://cli.github.com/) (`gh`) | Issues, project board, labels | `brew install gh` | `winget install GitHub.cli` | [install guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md) |
-| [jq](https://jqlang.github.io/jq/) | JSON parsing for API responses | `brew install jq` | `winget install jqlang.jq` | `sudo apt install jq` |
 
 After installing, run `gh auth login` to authenticate. On Windows, commands work in Git Bash, PowerShell, and WSL.
