@@ -81,7 +81,7 @@ A comprehensive Claude Code plugin collection from an Anthropic hackathon winner
 
 ### `/init-project` - Project Bootstrapper
 
-The entry point for new projects. Checks that required tools are installed (git, gh) across macOS, Windows, and Linux, and offers to install what's missing. Creates a GitHub Project board with Status/Phase/Priority fields, sets up 17 standard labels, captures all generated field IDs, and writes them into every command and config file. If you're adding this to an existing project, it detects existing files and offers to back up, merge, or abort so nothing gets overwritten.
+The entry point for new projects. Checks that required tools are installed (git, gh) across macOS, Windows, and Linux, and offers to install what's missing. Creates a GitHub Project board with Status/Phase/Priority fields, sets up 17 standard labels, captures all generated field IDs, and writes them into every command and config file. For JS/TS projects, offers to set up auto-formatting on commit (Husky + lint-staged + Prettier) so every commit gets cleaned up automatically. If you're adding this to an existing project, it detects existing files and offers to back up, merge, or abort so nothing gets overwritten.
 
 ### `/plan-feature` - Feature Planner
 

@@ -388,7 +388,79 @@ When starting work on any GitHub issue, move it to "In Progress" on the project 
 - **If running long:** say "I've completed steps 1-4. Steps 5-7 remain. Should I continue?"
 ```
 
-## Step 7: Configure GitHub Project Automations
+## Step 7: Auto-Format on Commit (JS/TS Projects)
+
+Check if the project already has auto-formatting configured:
+
+```bash
+# Check for existing setup
+test -f .husky/pre-commit && echo "Husky pre-commit: EXISTS" || echo "Husky pre-commit: not found"
+test -f .prettierrc.json -o -f .prettierrc -o -f prettier.config.js && echo "Prettier config: EXISTS" || echo "Prettier config: not found"
+grep -q "lint-staged" package.json 2>/dev/null && echo "lint-staged: configured" || echo "lint-staged: not configured"
+```
+
+**If package.json exists but auto-formatting is not set up**, offer to configure it:
+
+> "I noticed this is a JS/TS project without auto-formatting on commit. I'd recommend setting up Husky + lint-staged + Prettier so every commit gets automatically formatted. This pairs well with `/commit` since the formatting runs as a pre-commit hook. Want me to set it up?"
+
+**If the user says yes:**
+
+```bash
+# Install dev dependencies
+npm install -D prettier husky lint-staged
+
+# Initialize husky
+npx husky init
+```
+
+Create `.husky/pre-commit`:
+```bash
+npx lint-staged
+```
+
+Create `.prettierrc.json` with sensible defaults (adapt based on existing code style):
+```json
+{
+  "semi": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 120
+}
+```
+
+Add lint-staged config to `package.json`:
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  }
+}
+```
+
+If ESLint is already installed, add it to the lint-staged pipeline before Prettier:
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  }
+}
+```
+
+**If the project already has auto-formatting**, or is not a JS/TS project, skip this step.
+
+## Step 8: Configure GitHub Project Automations
 
 Tell the user to manually configure these in the GitHub UI (Project Settings > Workflows):
 
@@ -398,7 +470,7 @@ Tell the user to manually configure these in the GitHub UI (Project Settings > W
 
 These cannot be set via the API.
 
-## Step 8: Create Starter Views
+## Step 9: Create Starter Views
 
 Tell the user to create these views in the GitHub Project UI:
 
@@ -407,7 +479,7 @@ Tell the user to create these views in the GitHub Project UI:
 3. **Bugs** - Board layout, filter: `label:type:bug`
 4. **Epics** - Table layout with hierarchy enabled
 
-## Step 9: Verify Setup
+## Step 10: Verify Setup
 
 Run verification checks:
 
@@ -428,7 +500,7 @@ grep -c '{{' .claude/workflow.md && echo "ERROR: Unresolved placeholders" || ech
 grep -rc '{{' .claude/commands/ && echo "ERROR: Unresolved placeholders in commands" || echo "OK: All command placeholders resolved"
 ```
 
-## Step 10: Output Summary
+## Step 11: Output Summary
 
 Report to the user:
 
@@ -452,6 +524,7 @@ Report to the user:
 - Workflow configuration in .claude/workflow.md
 - 8 slash commands configured
 - CLAUDE.md (generated or starter)
+- Auto-format on commit (if configured): Husky + lint-staged + Prettier
 
 ### Manual Steps Required
 1. Configure project automations (auto-add, item-closed, auto-archive) in GitHub UI
