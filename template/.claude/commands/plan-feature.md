@@ -452,16 +452,34 @@ Execute every command to ensure zero regressions and 100% feature correctness.
 
 After creating the Plan:
 
-1. Create or update a GitHub issue for this feature:
+1. **Create or update a GitHub feature issue:**
 
    - If no issue exists: `gh issue create --repo {{REPO_OWNER}}/{{REPO_NAME}} --title "<feature title>" --body "<acceptance criteria as checkboxes>"` then add appropriate labels (phase, type, priority, area) and add to the project board
    - If an issue already exists: comment on it with a link to the plan file
    - Apply appropriate labels from the taxonomy (phase:N, type:feature, priority:X, area:Y)
    - Add to the project board: `gh project item-add {{PROJECT_NUMBER}} --owner @me --url <issue-url>`
    - **Set project board fields** (Phase, Priority) via GraphQL. Labels alone are not enough. See workflow.md section 6 for the field-setting procedure and Field IDs reference.
-   - If this feature belongs under a Phase Epic, add as sub-issue via GraphQL `addSubIssue` mutation
 
-2. Provide:
+2. **Link to Phase Epic (if applicable):**
+
+   - Check if the feature belongs to a development phase
+   - If yes, find the Phase Epic issue and add this feature as a sub-issue via GraphQL `addSubIssue` mutation:
+     ```bash
+     gh api graphql -f query="mutation { addSubIssue(input: { issueId: \"<EPIC_NODE_ID>\", subIssueId: \"$ISSUE_ID\" }) { issue { number } subIssue { number } } }"
+     ```
+   - If no Phase Epic exists yet, ask the user if they want to create one
+
+3. **Create task sub-issues (for larger features):**
+
+   If the plan has 5+ implementation steps, offer to create task sub-issues under the feature issue for granular progress tracking. Each task sub-issue maps to a major step in the plan:
+
+   - Create each task issue: `gh issue create --repo {{REPO_OWNER}}/{{REPO_NAME}} --title "<task title>" --body "<validation command and done criteria>"`
+   - Link as sub-issue of the feature issue via `addSubIssue`
+   - This gives automatic progress tracking (the feature issue shows "3/7 complete")
+
+   For smaller features (under 5 steps), skip this and just use the AC checkboxes on the feature issue.
+
+4. Provide:
    - Summary of feature and approach
    - Full path to created Plan file
    - GitHub issue reference (e.g., "This implements GH #61")
