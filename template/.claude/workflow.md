@@ -126,11 +126,11 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
                                     (granular progress)
    |
    v
-3. /execute reads the plan file     Implements step by step
+3. /execute OR /execute-team        Implements the plan
+   reads the plan file              (see "Choosing an executor")
    - Moves board item to            "In Progress"
      "In Progress"
-   - Checks off AC checkboxes        As each step completes
-     as steps complete
+   - Checks off AC checkboxes        As work completes
    |
    v
 4. /commit commits the code
@@ -139,6 +139,15 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
    - Closes issues if all AC met    With reference to commit
    - Board auto-updates to Done     Via automation
 ```
+
+### Choosing an executor
+
+Step 3 has two executors that consume the same plan file:
+
+- **`/execute`** — one agent implements the plan sequentially. Use for single-domain or sequential work.
+- **`/execute-team`** — a lead coordinates multiple agents building components in parallel (single view), each to agreed integration contracts. Use for multi-component, parallelizable builds (e.g. frontend + backend + database). Lives at `.claude/skills/execute-team/`.
+
+`/plan-feature` analyzes the feature and recommends which to use (see the plan's Feature Metadata). Both keep the board in sync the same way and hand off to `/commit`.
 
 ### Quick fixes and bugs
 
@@ -238,6 +247,13 @@ Each slash command interacts with GitHub in specific ways:
 - **Reads:** Plan file (passed as argument)
 - **Updates:** Moves board item to "In Progress", checks off AC in issue body as steps complete
 - **Post-execution:** Comments on issue with summary, notes readiness for `/commit`
+
+### /execute-team
+
+- **Reads:** Plan file (passed as argument), especially its Integration Contracts & Component Ownership and per-component/E2E validation sections
+- **Updates:** Moves board item to "In Progress" (Step 0), checks off AC and comments a summary (Step 7)
+- **What it does:** Multi-agent counterpart to `/execute`. The lead reads/distributes the plan's contracts, spawns agents to build components in parallel (single view), runs a contract diff and end-to-end validation, then hands off to `/commit`. Invoked explicitly as a skill (`disable-model-invocation`); does not auto-trigger.
+- **When to use:** Multi-component, parallelizable builds; `/plan-feature` recommends it. See `.claude/skills/execute-team/`.
 
 ### /commit
 

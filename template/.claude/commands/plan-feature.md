@@ -36,6 +36,7 @@ Transform a feature request into a **comprehensive implementation plan** through
 - Determine feature type: New Capability/Enhancement/Refactor/Bug Fix
 - Assess complexity: Low/Medium/High
 - Map affected systems and components
+- Assess parallelizability: can the work split into independent components built in parallel (e.g. frontend/backend/database, or several modules), or is it single-domain sequential work? This drives the executor recommendation (`/execute` vs `/execute-team`).
 
 **Create User Story Format Or Refine If Story Was Provided By The User:**
 
@@ -179,6 +180,8 @@ So that <benefit/value>
 **Estimated Complexity**: [Low/Medium/High]
 **Primary Systems Affected**: [List of main components/services]
 **Dependencies**: [External libraries or services required]
+**Recommended Executor**: [/execute (single-domain, sequential) | /execute-team (multi-component, parallelizable)] - <one-line reason>
+**Suggested Team Size**: [N agents — only if /execute-team]
 
 ---
 
@@ -245,6 +248,44 @@ So that <benefit/value>
 - GitHub issue: #NN
 - Relevant docs: [Link](url) - Why it matters
 - Design reference: Screenshot or mockup location
+
+---
+
+## INTEGRATION CONTRACTS & COMPONENT OWNERSHIP
+
+<Required when the Recommended Executor is /execute-team; valuable for /execute too. This is where the cross-layer thinking gets pinned down so parallel agents (or a single agent) build to agreed interfaces instead of guessing. Omit the tables for genuinely single-component features.>
+
+### Component Ownership
+
+<Split the work into components that can be built independently. For each, name what it owns and what it must not touch.>
+
+| Component | Owns (files/dirs)     | Does NOT touch       | Responsibilities          |
+| --------- | --------------------- | -------------------- | ------------------------- |
+| frontend  | `app/`, `components/` | `api/`, migrations   | UI, calls the API         |
+| backend   | `api/`, services      | `components/`        | endpoints, business logic |
+| database  | `migrations/`, schema | UI                   | schema, queries           |
+
+### Integration Contracts
+
+<Define every cross-component interface with enough precision that components can be built in isolation. Be exact — this is the difference between clean integration and a day of mismatch debugging.>
+
+**<Producer> → <Consumer> contract:**
+
+- Exact endpoint URLs, including trailing slashes (e.g. `POST /api/sessions/`)
+- Request/response JSON shapes as explicit JSON, not prose (e.g. `{"session": {...}, "messages": [...]}`)
+- Status codes for success and error cases
+- Event/SSE types with exact JSON format (if streaming)
+- Response envelopes (flat vs nested)
+- Data models / function signatures (for DB ↔ backend)
+
+### Cross-Cutting Concerns
+
+<Behaviors that span components and get dropped unless one owner is named. Assign each to exactly one component.>
+
+- [ ] **<concern>** (owner: <component>) — e.g. streaming-storage semantics (per-chunk vs accumulated)
+- [ ] **<concern>** (owner: <component>) — e.g. URL conventions (trailing slashes)
+- [ ] **<concern>** (owner: <component>) — e.g. error response shapes
+- [ ] **<concern>** (owner: <component>) — e.g. accessibility hooks (aria-labels) for automated testing
 
 ---
 
@@ -363,6 +404,18 @@ Execute every command to ensure zero regressions and 100% feature correctness.
 ### Level 4: Manual Validation
 
 <Feature-specific manual testing steps - API calls, UI testing, etc.>
+
+### Per-Component Validation (for /execute-team)
+
+<When the build splits across components, give each its own validation block so each agent can self-verify before reporting done. Mirror the Component Ownership table.>
+
+- **<component>**: <commands that validate this component in isolation>
+
+### End-to-End Validation (lead)
+
+<The full-system check the lead (or /execute) runs after all components are integrated. Walk the primary user flow start to finish.>
+
+- <command/step that exercises the whole flow, and the expected result>
 
 ---
 
@@ -484,5 +537,6 @@ After creating the Plan:
    - Full path to created Plan file
    - GitHub issue reference (e.g., "This implements GH #61")
    - Complexity assessment
+   - **Recommended executor**: `/execute` or `/execute-team` (with suggested team size), and why
    - Key implementation risks or considerations
    - Estimated confidence score for one-pass success

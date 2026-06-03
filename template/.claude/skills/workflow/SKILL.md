@@ -13,6 +13,7 @@ Use this skill when:
 - Changing the issue hierarchy structure (epics, features, tasks)
 - Updating the label taxonomy
 - Adding a new slash command that interacts with GitHub
+- Adding or changing an execution path (e.g. the `/execute-team` agent-team skill)
 - Changing how plan files or PRDs relate to GitHub issues
 - Rethinking any part of the workflow lifecycle
 
@@ -33,6 +34,7 @@ Read all of these before making any changes:
    - `.claude/commands/create-rules.md`
    - `.claude/commands/prime.md`
    - `.claude/commands/init-project.md`
+   - `.claude/skills/execute-team/SKILL.md` (agent-team build executor — interacts with the board like `/execute`)
 3. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
 4. **GitHub Project state:**
    ```bash
@@ -65,6 +67,7 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/create-rules.md`
 - [ ] `.claude/commands/prime.md`
 - [ ] `.claude/commands/init-project.md`
+- [ ] `.claude/skills/execute-team/SKILL.md` (agent-team executor)
 - [ ] `CLAUDE.md` (project rules)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)

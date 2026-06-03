@@ -311,7 +311,7 @@ Now replace all `{{PLACEHOLDER}}` values in the workflow files with the real IDs
    - `{{PROJECT_NUMBER}}` with actual number
    - `{{PROJECT_ID}}` with actual ID
 
-3. **`.claude/skills/workflow/SKILL.md`** - Replace same placeholders
+3. **All `.claude/skills/**/SKILL.md`** files (includes `workflow` and `execute-team`) - Replace `{{REPO_OWNER}}`, `{{REPO_NAME}}`, `{{PROJECT_NUMBER}}`, `{{PROJECT_ID}}`
 
 ### Generate CLAUDE.md
 
@@ -502,6 +502,9 @@ grep -c '{{' .claude/workflow.md && echo "ERROR: Unresolved placeholders" || ech
 
 # Verify commands have no remaining placeholders
 grep -rc '{{' .claude/commands/ && echo "ERROR: Unresolved placeholders in commands" || echo "OK: All command placeholders resolved"
+
+# Verify skills have no remaining placeholders
+grep -rc '{{' .claude/skills/ && echo "ERROR: Unresolved placeholders in skills" || echo "OK: All skill placeholders resolved"
 ```
 
 ## Step 11: Output Summary
@@ -527,6 +530,7 @@ Report to the user:
 - 17 labels (phase, type, priority, source)
 - Workflow configuration in .claude/workflow.md
 - 9 slash commands configured
+- 2 skills configured (workflow, execute-team)
 - CLAUDE.md (generated or starter)
 - Auto-format on commit (if configured): Husky + lint-staged + Prettier
 
@@ -542,7 +546,8 @@ Report to the user:
 - /prime         - Load project context
 - /create-prd    - Write your PRD
 - /plan-feature  - Plan a feature
-- /execute       - Implement a plan
+- /execute       - Implement a plan (single agent)
+- /execute-team  - Implement a plan with a parallel agent team
 - /commit        - Commit with issue tracking
 - /continue      - Resume next session
 - /status        - Review progress
