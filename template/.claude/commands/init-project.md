@@ -69,6 +69,7 @@ echo "=== Required Configuration ==="
 gh auth status 2>&1 | head -3
 git rev-parse --is-inside-work-tree 2>/dev/null && echo "  Git repo: OK" || echo "  Git repo: NOT A REPO"
 git remote get-url origin 2>/dev/null && echo "  Git remote: OK" || echo "  Git remote: NOT SET"
+[ -z "$(git status --porcelain 2>/dev/null)" ] && echo "  Working tree: clean" || echo "  Working tree: DIRTY (commit or stash recommended before setup)"
 
 # Optional tools
 echo "=== Optional Tools ==="
@@ -118,6 +119,8 @@ If any **required** tool or configuration is missing:
 
 If only **optional** tools are missing, note them but continue.
 
+**If the working tree is dirty** (uncommitted changes), warn the user before proceeding: "Your working tree has uncommitted changes. Setup adds and modifies files (CLAUDE.md, `.claude/`), so I recommend committing or stashing first so the workflow changes land in a clean, reviewable commit." This is a warning, not a blocker — continue if the user confirms.
+
 ---
 
 ## Step 2: Gather Project Details
@@ -139,7 +142,7 @@ Scan for files that already exist and could be overwritten. This is important wh
 echo "=== Existing Files Check ==="
 
 # Critical - these contain project-specific content that would be lost
-test -f CLAUDE.md && echo "  CLAUDE.md: EXISTS (will be regenerated)" || echo "  CLAUDE.md: not found"
+test -f CLAUDE.md && echo "  CLAUDE.md: EXISTS (workflow sections appended; existing content preserved)" || echo "  CLAUDE.md: not found"
 test -f .claude/workflow.md && echo "  .claude/workflow.md: EXISTS" || echo "  .claude/workflow.md: not found"
 
 # Commands - check if any custom commands exist that would be overwritten
@@ -149,6 +152,20 @@ done
 
 # Rules - check for existing path-scoped rules
 ls .claude/rules/*.md 2>/dev/null && echo "  .claude/rules/: has existing rules" || echo "  .claude/rules/: empty or not found"
+
+# Skills - existing skills (setup adds the workflow skill; any others are yours)
+ls -d .claude/skills/*/ 2>/dev/null && echo "  .claude/skills/: has existing skills" || echo "  .claude/skills/: none"
+
+# .claude assets setup will NOT touch (reported so nothing surprises you)
+ls -d .claude/agents/ 2>/dev/null && echo "  .claude/agents/: EXISTS (custom subagents — left untouched)"
+test -f .claude/settings.local.json && echo "  .claude/settings.local.json: EXISTS (permissions — left untouched)"
+ls .claude/docs/*.md 2>/dev/null && echo "  .claude/docs/: has existing docs"
+
+# Plan-doc location (alert only — no migration)
+test -d docs && echo "  docs/: EXISTS — note: this framework creates plans in .agents/plans/; existing planning docs are left where they are"
+
+# Existing open issues (alert only — NOT added to the board)
+gh issue list --state open --json number,title --jq '.[] | "  open issue #\(.number): \(.title)"' 2>/dev/null
 
 # GitHub Project
 gh project list --owner @me --format json
@@ -165,7 +182,8 @@ The following files already exist and would be affected:
 
 | File | Action | Risk |
 |------|--------|------|
-| CLAUDE.md | Will be regenerated from codebase analysis | **Your existing rules will be lost** |
+| CLAUDE.md (substantial existing content) | Workflow sections appended; existing content preserved | None — existing rules kept |
+| CLAUDE.md (missing or just the starter) | Generated from codebase analysis | Starter content replaced |
 | .claude/commands/commit.md | Will be overwritten with template version | Custom commit logic will be lost |
 | .claude/rules/components.md | Will be overwritten with template starter | Custom component rules will be lost |
 | ... | ... | ... |
@@ -175,6 +193,8 @@ Options:
 2. **Merge mode** - I'll keep your existing files and only add what's missing
 3. **Abort** - Stop and let you review manually
 ```
+
+**Existing open issues (alert only):** if the repo already has open issues (shown in the scan above), list them for the user. Do NOT add them to the new board or set fields — the board's auto-add automation only catches *new* issues, and porting old ones is the user's call (`gh project item-add <url>` if they want any tracked).
 
 **If the user chooses "Back up and proceed":**
 
@@ -201,7 +221,7 @@ Then proceed with the full setup.
 
 - Skip overwriting any existing command files, only create missing ones
 - Skip overwriting existing rule files, only create missing ones
-- Skip CLAUDE.md regeneration (or offer to append new sections to the existing one)
+- Append only the missing workflow sections (Issue Tracking, Decision Protocol, Scope Enforcement) to the existing CLAUDE.md; never overwrite it
 - Still create the GitHub Project board and fill in workflow.md placeholders
 
 **If a GitHub Project board already exists** that looks related, ask if they want to use it instead of creating a new one. If yes, skip board creation and just capture the existing field IDs.
@@ -341,9 +361,11 @@ If no documentation is found, ask the user:
 
 > "I didn't find any existing documentation (PRDs, design docs, etc.). Do you have any files you'd like me to read before generating CLAUDE.md? You can share file paths or just describe the project and I'll work from that."
 
-Then run the `/create-rules` command logic to analyze the codebase and generate a CLAUDE.md file. If the project is brand new with minimal code, create a starter CLAUDE.md from the template at `.claude/CLAUDE-template.md` with the project name and description filled in.
+**If a CLAUDE.md already exists with substantial project-specific content** (more than the starter — e.g. it has its own architecture, conventions, or domain rules): do NOT regenerate or overwrite it. Skip codebase analysis for CLAUDE.md and instead **append only the workflow sections below that are missing**. Check the existing file for the headings `Issue Tracking`, `Decision Protocol`, and `Scope Enforcement`, and add only the ones not already present. Leave all existing content intact.
 
-Add these standard sections to the generated CLAUDE.md (adapt based on what `/create-rules` produces):
+Otherwise (no CLAUDE.md, or it's effectively empty / just the starter), generate a fresh one: run the `/create-rules` command logic to analyze the codebase and generate a CLAUDE.md file. If the project is brand new with minimal code, create a starter CLAUDE.md from the template at `.claude/CLAUDE-template.md` with the project name and description filled in.
+
+Add these standard sections (used by both paths above — adapt based on what `/create-rules` produces):
 
 **Issue Tracking section:**
 ```markdown
