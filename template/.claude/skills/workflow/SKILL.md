@@ -30,6 +30,9 @@ Read all of these before making any changes:
    - `.claude/commands/plan-feature.md`
    - `.claude/commands/status.md`
    - `.claude/commands/create-prd.md`
+   - `.claude/commands/create-rules.md`
+   - `.claude/commands/prime.md`
+   - `.claude/commands/init-project.md`
 3. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
 4. **GitHub Project state:**
    ```bash
@@ -59,6 +62,9 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/plan-feature.md`
 - [ ] `.claude/commands/status.md`
 - [ ] `.claude/commands/create-prd.md`
+- [ ] `.claude/commands/create-rules.md`
+- [ ] `.claude/commands/prime.md`
+- [ ] `.claude/commands/init-project.md`
 - [ ] `CLAUDE.md` (project rules)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)

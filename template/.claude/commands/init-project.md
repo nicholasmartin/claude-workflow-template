@@ -78,7 +78,7 @@ supabase --version 2>/dev/null && echo "  supabase: OK" || echo "  supabase: not
 docker --version 2>/dev/null && echo "  docker: OK" || echo "  docker: not installed"
 ```
 
-**Windows note:** Claude Code on Windows typically runs in Git Bash, WSL, or PowerShell. The check commands above work in all three. When offering install commands, use `winget` if running natively on Windows, or the Linux commands if running inside WSL.
+**Windows note:** These checks use bash syntax, so run Claude Code with **Git Bash** or **WSL** as the shell — they do not run in native PowerShell. When offering install commands, use `winget` if running in Git Bash on native Windows, or the Linux commands if running inside WSL.
 
 ### Present Results
 
@@ -526,7 +526,7 @@ Report to the user:
 - GitHub Project board with Status, Phase, Priority fields
 - 17 labels (phase, type, priority, source)
 - Workflow configuration in .claude/workflow.md
-- 8 slash commands configured
+- 9 slash commands configured
 - CLAUDE.md (generated or starter)
 - Auto-format on commit (if configured): Husky + lint-staged + Prettier
 

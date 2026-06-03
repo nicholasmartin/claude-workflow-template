@@ -15,8 +15,10 @@ Build comprehensive understanding of the codebase by analyzing structure, docume
 List all tracked files:
 !`git ls-files`
 
-Show directory structure:
-On Linux, run: `tree -L 3 -I 'node_modules|__pycache__|.git|dist|build'`
+Show directory structure (use `tree` if installed, otherwise fall back to `find`):
+
+- With `tree`: `tree -L 3 -I 'node_modules|__pycache__|.git|dist|build'`
+- Fallback (no `tree`): `find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/__pycache__/*' | head -50`
 
 ### 2. Read Core Documentation
 

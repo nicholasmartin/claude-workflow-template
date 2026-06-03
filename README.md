@@ -93,7 +93,7 @@ Reads a plan file and implements it step by step. Starts with pre-flight checks 
 
 ### `/commit` - Smart Commit
 
-Scans staged files for TODO/FIXME/HACK/XXX placeholders and empty function bodies before committing. If AI context files (`.claude/rules/`, `.claude/commands/`, `CLAUDE.md`) are in the diff, appends a `Context:` section to the commit body describing what changed in the AI layer. After committing, checks open GitHub issues, comments with the commit hash, checks off completed acceptance criteria, and closes issues when all AC are met.
+Scans staged files for TODO/FIXME/HACK/XXX placeholders and empty function bodies before committing (currently JS/TS only: `.js`, `.jsx`, `.ts`, `.tsx`). If AI context files (`.claude/rules/`, `.claude/commands/`, `CLAUDE.md`) are in the diff, appends a `Context:` section to the commit body describing what changed in the AI layer. After committing, checks open GitHub issues, comments with the commit hash, checks off completed acceptance criteria, and closes issues when all AC are met.
 
 ### `/continue` - Session Resumption
 
@@ -250,6 +250,8 @@ Then add to your `package.json`:
 
 ## Prerequisites
 
+> **Shell requirement:** The slash commands use bash syntax (`jq`, `grep`, `xargs`, `$(...)`, `test -f`). Run Claude Code with **Git Bash** or **WSL** as your shell — they do **not** run in native PowerShell. On Windows, Git Bash is the recommended default.
+
 `/init-project` checks all of these automatically and offers to install what's missing.
 
 | Tool | Purpose | macOS | Windows | Linux |
@@ -258,4 +260,4 @@ Then add to your `package.json`:
 | [git](https://git-scm.com/) | Version control | `brew install git` | `winget install Git.Git` | `sudo apt install git` |
 | [GitHub CLI](https://cli.github.com/) (`gh`) | Issues, project board, labels | `brew install gh` | `winget install GitHub.cli` | [install guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md) |
 
-After installing, run `gh auth login` to authenticate. On Windows, commands work in Git Bash, PowerShell, and WSL.
+After installing, run `gh auth login` to authenticate.
