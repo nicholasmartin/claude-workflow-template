@@ -45,85 +45,63 @@ I want to <action/goal>
 So that <benefit/value>
 ```
 
-### Phase 2: Codebase Intelligence Gathering
+### Phase 2: Clarify Ambiguities
 
-**Use specialized agents and parallel analysis:**
-
-**1. Project Structure Analysis**
-
-- Detect primary language(s), frameworks, and runtime versions
-- Map directory structure and architectural patterns
-- Identify service/component boundaries and integration points
-- Locate configuration files (pyproject.toml, package.json, etc.)
-- Find environment setup and build processes
-
-**2. Pattern Recognition** (Use specialized subagents when beneficial)
-
-- Search for similar implementations in codebase
-- Identify coding conventions:
-  - Naming patterns (CamelCase, snake_case, kebab-case)
-  - File organization and module structure
-  - Error handling approaches
-  - Logging patterns and standards
-- Extract common patterns for the feature's domain
-- Document anti-patterns to avoid
-- Check CLAUDE.md for project-specific rules and conventions
-
-**3. Dependency & Reference Doc Analysis**
-
-- Catalog external libraries relevant to feature
-- Understand how libraries are integrated (check imports, configs)
-- Find relevant documentation in docs/, .claude/docs/, or similar directories
-- **Scout `.claude/docs/` reference docs**: read the header of each file (Purpose, When to use, Size) and load only the ones relevant to this feature.
-- Note library versions and compatibility requirements
-
-**4. Testing Patterns**
-
-- Identify test framework and structure (pytest, jest, vitest, etc.)
-- Find similar test examples for reference
-- Understand test organization (unit vs integration)
-- Note coverage requirements and testing standards
-
-**5. Integration Points**
-
-- Identify existing files that need updates
-- Determine new files that need creation and their locations
-- Map router/API registration patterns
-- Understand database/model patterns if applicable
-- Identify authentication/authorization patterns if relevant
-
-**Clarify Ambiguities:**
+Scouts are about to be spawned in parallel — an ambiguity discovered after the fan-out invalidates their work. Resolve open questions now, before spending scout effort:
 
 - If requirements are unclear at this point, ask the user to clarify before you continue
 - Get specific implementation preferences (libraries, approaches, patterns)
 - Resolve architectural decisions before proceeding
 
-### Phase 3: External Research & Documentation
+### Phase 3: Parallel Intelligence Gathering (scout fan-out)
 
-**Use specialized subagents when beneficial for external research:**
+Research runs as three concurrent scout subagents. **Spawn all three as `Agent` tool calls in a single message so they run concurrently** — listing them as sequential steps serializes them.
 
-**Documentation Gathering:**
+**Subagents see none of this conversation.** Each prompt must be self-contained: include the feature name, a one-paragraph description, the user story, and any constraints established in Phases 0–1. End every prompt with: *"Your final message is your report — return the structured findings, not a narrative of your process."*
 
-- Research latest library versions and best practices
-- Find official documentation with specific section anchors
-- Locate implementation examples and tutorials
-- Identify common gotchas and known issues
-- Check for breaking changes and migration guides
+**Scout 1 — Codebase patterns** (`subagent_type: Explore`)
 
-**Compile Research References:**
+Ask it to investigate and report:
 
-```markdown
-## Relevant Documentation
+- Project structure: primary language(s), frameworks, runtime versions, directory/architectural patterns, config files, build processes
+- Similar implementations of comparable features, with file:line references
+- Coding conventions — naming, file organization, error handling, logging — as verbatim snippets from the codebase
+- Integration points: existing files the feature must update, where new files belong, registration patterns (routers, models, auth) if applicable
+- Anti-patterns to avoid
+- Project rules: instruct it to read CLAUDE.md and any path-scoped rules in `.claude/rules/` (Explore skips these by default)
 
-- [Library Official Docs](https://example.com/docs#section)
-  - Specific feature implementation guide
-  - Why: Needed for X functionality
-- [Framework Guide](https://example.com/guide#integration)
-  - Integration patterns section
-  - Why: Shows how to connect components
-```
+Required report format: files with line ranges + why each matters; verbatim pattern snippets; integration-point list.
 
-### Phase 4: Deep Strategic Thinking
+**Scout 2 — External research** (`subagent_type: general-purpose`)
+
+Ask it to research and report:
+
+- Current versions and best practices for libraries relevant to the feature
+- Official documentation links with specific section anchors
+- Implementation examples and tutorials
+- Common gotchas, known issues, breaking changes, migration guides
+
+Required report format: links with section anchors + "Why" per link; a "verified facts" list (claims confirmed against docs, not assumed).
+
+**Scout 3 — Testing patterns** (`subagent_type: Explore`)
+
+Ask it to investigate and report:
+
+- Test framework and organization (unit vs integration), coverage standards
+- Exemplar test files to mirror, with file:line references
+- Runnable validation commands discovered from project config (lint, typecheck, test invocations) — exact and non-interactive
+- `.claude/docs/` reference docs: read the header of each file (Purpose, When to use, Size) and report which are relevant to this feature
+
+Required report format: exemplar files with line refs; exact validation commands; relevant reference-doc list.
+
+### Phase 4: Synthesis & Deep Strategic Thinking
+
+**Wait for all three scout reports before proceeding.** Then synthesize:
+
+- Cross-check the reports against each other; note and resolve conflicts
+- **Spot-check load-bearing claims**: before a scout's file:line reference becomes a cornerstone of the plan, read those lines yourself
+- If a scout returned thin or no findings, note the gap instead of inventing citations — do targeted follow-up reads yourself
+- If the scouts uncovered new ambiguities, ask the user now — before writing the plan
 
 **Think Harder About:**
 
@@ -148,7 +126,7 @@ So that <benefit/value>
 
 What's below here is a template for you to fill for the implementation agent:
 
-```markdown
+````markdown
 # Feature: <feature-name>
 
 The following plan should be complete, but its important that you validate documentation and codebase patterns and task sanity before you start implementing.
@@ -218,6 +196,60 @@ So that <benefit/value>
 **Logging Pattern:** (for example)
 
 **Other Relevant Patterns:** (for example)
+
+---
+
+## INTEGRATION CONTRACTS
+
+<If the feature spans multiple components (backend + frontend, service + client, ...), this section is the AUTHORITATIVE interface definition: all components MUST conform to it exactly, and the executor verifies alignment before integration. If the feature is single-component, state: "Single-component feature — no cross-component contracts." and delete the subsections below.>
+
+### Component Boundaries
+
+<Partition the files so every path has exactly one owner.>
+
+| Component | Owns (files/dirs) | Must Not Touch |
+| --------- | ----------------- | -------------- |
+| backend   | `api/`, `models/` | `web/`         |
+| frontend  | `web/`            | `api/`, `models/` |
+
+### Interface Contract
+
+<Exact endpoints or public function signatures. URLs exact, INCLUDING trailing slashes — `POST /api/things/` and `POST /api/things` are different contracts.>
+
+| Method | Endpoint (exact) | Request Body | Response |
+| ------ | ---------------- | ------------ | -------- |
+| POST | `/api/things/` | `{"name": "..."}` | `ThingResponse` (200) |
+| GET | `/api/things/{id}` | — | `{"thing": ThingResponse}` (200) or 404 |
+
+### Data Shapes
+
+<Named shapes as explicit JSON, not prose. Call out flat vs nested envelopes — consumers must know exactly what to destructure.>
+
+**ThingResponse:**
+
+```json
+{ "id": "uuid", "name": "string", "created_at": "ISO8601" }
+```
+
+### Events / Streaming
+
+<Every event/message type with exact JSON, or "None.">
+
+### Error Shapes
+
+<Status codes + error body format per failure mode (404 body, 422 body, ...).>
+
+### State & Storage Semantics
+
+<Explicit semantics wherever components could diverge (e.g., streamed chunks accumulated into one row vs stored per-chunk).>
+
+### Cross-Cutting Concerns
+
+<Behaviors spanning components. Each concern is assigned to exactly ONE owner.>
+
+| Concern | Owner | Coordinates With | Detail |
+| ------- | ----- | ---------------- | ------ |
+| URL conventions | backend | frontend | Trailing slashes on collection endpoints; frontend fetch URLs must match exactly |
 
 ---
 
@@ -396,7 +428,7 @@ Execute every command to ensure zero regressions and 100% feature correctness.
 ## NOTES
 
 <Additional context, design decisions, trade-offs>
-```
+````
 
 ## Output Format
 
@@ -416,6 +448,15 @@ Execute every command to ensure zero regressions and 100% feature correctness.
 - [ ] Integration points clearly mapped
 - [ ] Gotchas and anti-patterns captured
 - [ ] Every task has executable validation command
+- [ ] Scout reports synthesized; load-bearing file:line claims spot-checked
+
+### Contract Completeness
+
+- [ ] Interface URLs exact, including trailing slashes
+- [ ] Data shapes as explicit JSON with flat-vs-nested envelopes called out
+- [ ] Events and error shapes specified
+- [ ] Every cross-cutting concern has exactly one owner
+- [ ] Single-component plans state "no cross-component contracts" explicitly
 
 ### Implementation Ready
 

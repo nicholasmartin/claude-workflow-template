@@ -238,7 +238,8 @@ Each slash command interacts with GitHub in specific ways:
 ### /plan-feature
 
 - **Reads:** PRD files, open issues, project board state
-- **Creates:** Plan file in `.agents/plans/`, GitHub issue (as sub-issue of Phase Epic), optional task sub-issues
+- **Spawns:** three concurrent research scouts — codebase patterns, external research, testing patterns (see section 9, Subagent Layer)
+- **Creates:** Plan file in `.agents/plans/` (including an Integration Contracts section), GitHub issue (as sub-issue of Phase Epic), optional task sub-issues
 - **Updates:** Adds issue to project board, applies labels, sets board fields (Phase, Priority per section 6)
 
 ### /execute
@@ -309,7 +310,43 @@ Changes to any hook script go through the `workflow` skill and must update this 
 
 ---
 
-## 9. Key Decisions and Rationale
+## 9. Subagent Layer (Scaled Compute)
+
+Agent-heavy phases fan work out to subagents via the `Agent` tool. The main session keeps the judgment work (clarification, synthesis, decisions); subagents do isolated retrieval and independent verification. The exact prompt specs live in the command files — this section is the system-level contract.
+
+### Roster
+
+| Command | Subagent | Type | Purpose | Returns |
+| ------- | -------- | ---- | ------- | ------- |
+| `/plan-feature` | Codebase-patterns scout | `Explore` | Structure, similar implementations, conventions, integration points, anti-patterns | Report with file:line evidence + verbatim snippets |
+| `/plan-feature` | External-research scout | `general-purpose` | Library versions, official docs with anchors, gotchas, breaking changes | Links + "verified facts" list |
+| `/plan-feature` | Testing-patterns scout | `Explore` | Test framework, exemplar tests, runnable validation commands, `.claude/docs/` relevance | Exemplars with line refs + exact commands |
+
+### Design Rules
+
+- **Parallelism is explicit:** concurrent subagents are spawned as multiple `Agent` calls in ONE message — prose that lists them as sequential steps serializes them.
+- **Prompts are self-contained:** subagents see none of the parent conversation. Every prompt restates the feature, constraints, and the required report format.
+- **Evidence, not vibes:** scout reports must carry file:line evidence; the main session spot-checks load-bearing claims before building on them.
+- **Judgment stays home:** ambiguity clarification happens *before* the fan-out (scout work is wasted otherwise); synthesis and plan writing stay in the main session.
+- **Type selection:** `Explore` for read-only research (fast; skips CLAUDE.md — tell it to read project rules when they matter); `general-purpose` when the task needs full tooling or project-rule context.
+
+### The Integration Contracts Convention
+
+Every plan produced by `/plan-feature` contains an `## INTEGRATION CONTRACTS` section. For multi-component features it is the authoritative interface definition and must meet this quality bar:
+
+1. Interface URLs exact, **including trailing slashes**
+2. Data shapes as **explicit JSON, not prose**, with flat-vs-nested envelopes called out
+3. All event/streaming types documented with exact JSON
+4. Error responses specified per failure mode (404 body, 422 body, ...)
+5. State/storage semantics explicit (e.g., accumulated vs per-chunk)
+
+Plus: component file-ownership boundaries (owns / must-not-touch) and a cross-cutting-concerns table where each concern has **exactly one owner**. Single-component plans state "Single-component feature — no cross-component contracts." explicitly. The consumer is any multi-component executor (a team-based executor arrives in a later phase); the section also sharpens single-agent execution.
+
+Changes to scout/verifier prompt specs in command files go through the `workflow` skill and must update this section in the same change.
+
+---
+
+## 10. Key Decisions and Rationale
 
 ### Why one project instead of multiple?
 
@@ -329,7 +366,7 @@ Sub-issues provide automatic progress tracking (the Epic shows "11/21 complete")
 
 ---
 
-## 10. Context Loading: 3-Tier System
+## 11. Context Loading: 3-Tier System
 
 This project uses progressive context disclosure to keep the context window focused on what matters for the current task.
 
@@ -355,7 +392,7 @@ When working on a task, prefer reading only the relevant sections of Tier 3 docs
 
 ---
 
-## 11. Changing This Workflow
+## 12. Changing This Workflow
 
 Use the `/workflow` skill when modifying this system. It ensures all related pieces get updated together:
 
