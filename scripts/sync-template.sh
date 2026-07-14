@@ -13,6 +13,17 @@ cd "$(dirname "$0")/.."
 
 source scripts/workflow.env
 
+# Guard: root-only files must never exist in (or ship from) template/.
+# validate-local.sh is this repo's private battery — if it leaked into
+# template/, every template user would inherit repo-specific checks, and
+# copying it would clobber the real root file (possibly mid-execution).
+for private in .claude/hooks/validate-local.sh; do
+  if [[ -e "template/$private" ]]; then
+    echo "ERROR: template/$private is root-only and must never ship. Delete it from template/." >&2
+    exit 1
+  fi
+done
+
 mapfile -t files < <(cd template/.claude && find . -type f | sort)
 
 for rel in "${files[@]}"; do

@@ -8,7 +8,19 @@
 cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}" || exit 1
 FAIL=0
 
-# --- 1. No unresolved {{TOKEN}} placeholders in GENERATED files --------
+# --- 1. Root-only files must never leak into the shipped template ------
+# MUST run before anything invokes sync: a same-named file in template/
+# would otherwise be copied over this very script while it executes
+# (bash reads scripts lazily — self-clobber kills the battery silently).
+# sync-template.sh carries the same guard as the primary defense.
+for private in validate-local.sh; do
+  if [ -e "template/.claude/hooks/$private" ]; then
+    echo "Boundary violation: template/.claude/hooks/$private exists — this file is root-only and must never ship. Delete it from template/ before anything else runs."
+    exit 1
+  fi
+done
+
+# --- 2. No unresolved {{TOKEN}} placeholders in GENERATED files --------
 # Only files with a counterpart in template/.claude are checked: root-only
 # files (PRD.md, this script) may legitimately mention placeholder syntax.
 LEFT=""
@@ -25,7 +37,7 @@ if [ -n "$LEFT" ]; then
   FAIL=1
 fi
 
-# --- 2. Template/root sync drift ---------------------------------------
+# --- 3. Template/root sync drift ---------------------------------------
 # sync-template.sh is idempotent: if running it changes any file content
 # under .claude/, the root copy was stale (someone edited template/
 # without syncing, or hand-edited a generated root file).
@@ -45,7 +57,7 @@ else
   fi
 fi
 
-# --- 3. Shell syntax across the toolchain ------------------------------
+# --- 4. Shell syntax across the toolchain ------------------------------
 for f in scripts/*.sh .claude/hooks/*.sh .claude/scripts/*.sh; do
   [ -f "$f" ] || continue
   if ! ERR="$(bash -n "$f" 2>&1)"; then
