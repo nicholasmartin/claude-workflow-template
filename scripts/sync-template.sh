@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Sync the template (source of truth) into this repo's live installation.
+#
+#   template/.claude  ->  .claude   (placeholders filled from scripts/workflow.env)
+#   template/.agents  ->  .agents   (only files that don't already exist)
+#
+# Rules:
+#   - template/ is ALWAYS edited first; never edit .claude/ copies directly.
+#   - init-project.md is copied verbatim: its {{...}} braces are instructional.
+#   - Files that exist only in .claude/ (CLAUDE.md, PRD.md, plans) are untouched.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+source scripts/workflow.env
+
+mapfile -t files < <(cd template/.claude && find . -type f | sort)
+
+for rel in "${files[@]}"; do
+  src="template/.claude/$rel"
+  dst=".claude/$rel"
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+
+  # init-project.md keeps its placeholders (generic setup instructions)
+  [[ "$rel" == *"init-project.md"* ]] && continue
+
+  sed -i \
+    -e "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+    -e "s|{{REPO_OWNER}}|$REPO_OWNER|g" \
+    -e "s|{{REPO_NAME}}|$REPO_NAME|g" \
+    -e "s|{{PROJECT_NUMBER}}|$PROJECT_NUMBER|g" \
+    -e "s|{{PROJECT_ID}}|$PROJECT_ID|g" \
+    -e "s|{{STATUS_FIELD_ID}}|$STATUS_FIELD_ID|g" \
+    -e "s|{{STATUS_BACKLOG_ID}}|$STATUS_BACKLOG_ID|g" \
+    -e "s|{{STATUS_READY_ID}}|$STATUS_READY_ID|g" \
+    -e "s|{{STATUS_IN_PROGRESS_ID}}|$STATUS_IN_PROGRESS_ID|g" \
+    -e "s|{{STATUS_DONE_ID}}|$STATUS_DONE_ID|g" \
+    -e "s|{{PHASE_FIELD_ID}}|$PHASE_FIELD_ID|g" \
+    -e "s|{{PRIORITY_FIELD_ID}}|$PRIORITY_FIELD_ID|g" \
+    -e "s|{{PRIORITY_LOW_ID}}|$PRIORITY_LOW_ID|g" \
+    -e "s|{{PRIORITY_MEDIUM_ID}}|$PRIORITY_MEDIUM_ID|g" \
+    -e "s|{{PRIORITY_HIGH_ID}}|$PRIORITY_HIGH_ID|g" \
+    -e "s|{{PRIORITY_CRITICAL_ID}}|$PRIORITY_CRITICAL_ID|g" \
+    -e "s|(populated as phases are created)|$PHASE_OPTIONS|g" \
+    "$dst"
+done
+
+# .agents: copy only missing files (never clobber real plans)
+(cd template/.agents && find . -type f) | while read -r rel; do
+  dst=".agents/$rel"
+  if [[ ! -f "$dst" ]]; then
+    mkdir -p "$(dirname "$dst")"
+    cp "template/.agents/$rel" "$dst"
+  fi
+done
+
+# Verify: no unresolved placeholders outside init-project.md
+leftover=$(grep -rl '{{' .claude/ | grep -v 'init-project.md' || true)
+if [[ -n "$leftover" ]]; then
+  echo "ERROR: unresolved placeholders in:" >&2
+  echo "$leftover" >&2
+  exit 1
+fi
+echo "OK: template synced, all placeholders resolved."
