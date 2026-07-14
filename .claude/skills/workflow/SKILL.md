@@ -141,6 +141,7 @@ After implementing:
 
 - **Never update a command without updating workflow.md** to match
 - **Never change a hook script or settings.json without updating workflow.md § Hook Layer** in the same change
+- **Never change a scout or verifier prompt spec in a command without updating workflow.md § Subagent Layer** in the same change
 - **Never add a GitHub field without documenting it** in workflow.md section 2
 - **Never change label taxonomy without updating** workflow.md section 4
 - **Test command syntax** by reading the updated command file and verifying `gh` commands reference valid field/option IDs

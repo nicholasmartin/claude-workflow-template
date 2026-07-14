@@ -245,8 +245,9 @@ Each slash command interacts with GitHub in specific ways:
 ### /execute
 
 - **Reads:** Plan file (passed as argument)
+- **Spawns:** one task verifier per completed task + a final Observable-Truths verifier (see section 9, Subagent Layer)
 - **Updates:** Moves board item to "In Progress", checks off AC in issue body as steps complete
-- **Post-execution:** Comments on issue with summary, notes readiness for `/commit`
+- **Post-execution:** Comments on issue with summary (including verifier verdicts), notes readiness for `/commit`
 
 ### /commit
 
@@ -321,6 +322,8 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 | `/plan-feature` | Codebase-patterns scout | `Explore` | Structure, similar implementations, conventions, integration points, anti-patterns | Report with file:line evidence + verbatim snippets |
 | `/plan-feature` | External-research scout | `general-purpose` | Library versions, official docs with anchors, gotchas, breaking changes | Links + "verified facts" list |
 | `/plan-feature` | Testing-patterns scout | `Explore` | Test framework, exemplar tests, runnable validation commands, `.claude/docs/` relevance | Exemplars with line refs + exact commands |
+| `/execute` | Task verifier (one per task) | `Explore` | Independently confirms a task's VERIFY/DONE claims after its VALIDATE passes | `VERDICT: PASS` or `VERDICT: FAIL — <evidence>` |
+| `/execute` | Observable-Truths verifier | `Explore` | Confirms every plan-level Observable Truth before the output report | Per-truth PASS/FAIL with evidence |
 
 ### Design Rules
 
@@ -329,6 +332,8 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 - **Evidence, not vibes:** scout reports must carry file:line evidence; the main session spot-checks load-bearing claims before building on them.
 - **Judgment stays home:** ambiguity clarification happens *before* the fan-out (scout work is wasted otherwise); synthesis and plan writing stay in the main session.
 - **Type selection:** `Explore` for read-only research (fast; skips CLAUDE.md — tell it to read project rules when they matter); `general-purpose` when the task needs full tooling or project-rule context.
+- **Verifiers report, never repair:** the builder stays the only writer. A verifier returns a verdict; the builder fixes and re-verifies. **Verdict gate:** Final Validation cannot start with outstanding or failed verdicts.
+- **Hooks check conditions, verifiers check claims:** the Hook Layer (section 8) owns deterministic pass/fail (lint, typecheck, drift); verifiers own judgment about whether a task's claimed outcome actually holds. Neither replaces the other.
 
 ### The Integration Contracts Convention
 
