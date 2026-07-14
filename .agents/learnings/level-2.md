@@ -1,6 +1,6 @@
 # Level 2: Parallel Subagents — What Changed and Why
 
-**Status:** awaiting walkthrough + sign-off (this doc is deliverable 1 of 3; the live walkthrough and your sign-off comment on epic #10 complete the gate)
+**Status:** complete — walkthrough performed and owner sign-off recorded on epic #10 (2026-07-14)
 **Commits:** `c41c9c3` (Phase A: /plan-feature scouts + Integration Contracts), `1ce1417` (Phase B: /execute verifier)
 
 ---
@@ -100,4 +100,4 @@ The conceptual line to keep: **Level 1 hooks check *conditions*** (deterministic
 3. **Accidental Level 5 preview.** Two sessions worked the repo simultaneously — planner in one, walkthrough in the other — coordinated only by the board and git, zero conflicts. The "board as shared blackboard" convention works before it's even formalized.
 4. **Attribution lesson (walkthrough-session error, corrected by the owner).** The walkthrough session noticed the Level 3 plan file appear mid-run and misattributed it to the `general-purpose` scout (the one subagent type with write tools). The owner corrected the record: they had written it in their parallel session. Lesson: an artifact appearing mid-run needs a provenance check before a conclusion — especially once multiple sessions are in play. The plausible-but-false failure mode still motivated a cheap real guard: scout prompts now explicitly forbid file creation ("scouts are read-only by contract", commit `71d0f6c`), the prompt-level twin of the verifiers' tooling-enforced report-don't-repair.
 
-**Sign-off:** _(pending — recorded as a comment on epic #10)_
+**Sign-off:** recorded 2026-07-14 as the closing comment on epic #10.
