@@ -313,6 +313,16 @@ Now replace all `{{PLACEHOLDER}}` values in the workflow files with the real IDs
 
 3. **`.claude/skills/workflow/SKILL.md`** - Replace same placeholders
 
+### Validation hooks (ship with the template — no placeholders to fill)
+
+`.claude/settings.json` and `.claude/hooks/` arrive with the template copy and are active immediately:
+
+- **post-edit-lint.sh** (PostToolUse) — advisory single-file lint after every Write/Edit
+- **stop-validate.sh** (Stop) — blocking validation battery before a turn may end
+- **pre-commit-scan.sh** — staged-file placeholder scan invoked by `/commit`
+
+Tell the user: **the first time a hook fires, Claude Code asks for one-time approval of project hooks — this is expected; approve it.** Hooks detect project tooling (eslint, tsc) and silently no-op when a tool isn't present, so they are safe on any stack. Projects can extend the Stop battery by creating `.claude/hooks/validate-local.sh` (see workflow.md § Hook Layer).
+
 ### Generate CLAUDE.md
 
 Before generating, scan for existing documentation that could provide project context:
@@ -420,7 +430,10 @@ npx husky init
 Create `.husky/pre-commit`:
 ```bash
 npx lint-staged
+bash .claude/hooks/pre-commit-scan.sh
 ```
+
+(The second line runs the template's placeholder scan on every commit, not just via `/commit`. It warns but never blocks.)
 
 Create `.prettierrc.json` with sensible defaults (adapt based on existing code style):
 ```json
@@ -502,7 +515,13 @@ grep -c '{{' .claude/workflow.md && echo "ERROR: Unresolved placeholders" || ech
 
 # Verify commands have no remaining placeholders
 grep -rc '{{' .claude/commands/ && echo "ERROR: Unresolved placeholders in commands" || echo "OK: All command placeholders resolved"
+
+# Verify hooks config is valid and scripts are executable
+python3 -m json.tool .claude/settings.json >/dev/null && echo "OK: settings.json valid"
+test -x .claude/hooks/post-edit-lint.sh && echo "OK: hook scripts executable" || chmod +x .claude/hooks/*.sh
 ```
+
+Also have the user run `/hooks` in Claude Code to confirm the PostToolUse and Stop hooks are registered (and approve them if prompted).
 
 ## Step 11: Output Summary
 

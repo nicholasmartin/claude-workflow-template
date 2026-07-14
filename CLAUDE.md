@@ -47,8 +47,9 @@ There is no build, no package.json, no test framework — validation is structur
 # Sync template -> live installation (run after any template/ edit)
 ./scripts/sync-template.sh
 
-# Validate: no unresolved placeholders outside init-project.md
-grep -rl '{{' .claude/ | grep -v init-project.md   # expect empty
+# Validate this repo's invariants (placeholders, sync drift, shell syntax)
+# — also runs automatically as the Stop-hook battery
+./.claude/hooks/validate-local.sh
 ```
 
 ---

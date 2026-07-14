@@ -72,11 +72,7 @@ For EACH task in "Step by Step Tasks":
 - Include proper type hints and documentation
 - Add structured logging where appropriate
 
-#### c. Verify as you go
-
-- After each file change, check syntax
-- Ensure imports are correct
-- Verify types are properly defined
+> Per-edit lint feedback arrives automatically via the PostToolUse hook (see workflow.md § Hook Layer) — fix anything it reports before moving on.
 
 ### 4. Implement Testing Strategy
 
@@ -87,19 +83,11 @@ After completing implementation tasks:
 - Follow the testing approach outlined
 - Ensure tests cover edge cases
 
-### 5. Run Validation Commands
+### 5. Final Validation
 
-Execute ALL validation commands from the plan in order:
+The end-of-turn validation battery runs automatically via the Stop hook (see workflow.md § Hook Layer) — your turn cannot end while it fails; fix anything it reports.
 
-```bash
-# Run each command exactly as specified in plan
-```
-
-If any command fails:
-
-- Fix the issue
-- Re-run the command
-- Continue only when it passes
+Additionally, execute the plan's project-specific validation commands (the hook doesn't know the plan) in order, and fix failures until every command passes.
 
 ### 6. Final Verification
 

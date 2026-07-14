@@ -45,6 +45,9 @@ for rel in "${files[@]}"; do
     "$dst"
 done
 
+# Hook and plumbing scripts must stay executable after copy
+chmod +x .claude/hooks/*.sh .claude/scripts/*.sh 2>/dev/null || true
+
 # .agents: copy only missing files (never clobber real plans)
 (cd template/.agents && find . -type f) | while read -r rel; do
   dst=".agents/$rel"
@@ -54,11 +57,20 @@ done
   fi
 done
 
-# Verify: no unresolved placeholders outside init-project.md
-leftover=$(grep -rl '{{' .claude/ | grep -v 'init-project.md' || true)
+# Verify: no unresolved {{TOKEN}} placeholders in the files we generated.
+# Only generated files are checked — root-only files (PRD.md, hooks
+# extensions) may legitimately mention placeholder syntax. init-project.md
+# keeps its instructional braces by design.
+leftover=""
+for rel in "${files[@]}"; do
+  [[ "$rel" == *"init-project.md"* ]] && continue
+  if grep -qE '\{\{[A-Z_]+\}\}' ".claude/$rel" 2>/dev/null; then
+    leftover="${leftover}.claude/$rel"$'\n'
+  fi
+done
 if [[ -n "$leftover" ]]; then
   echo "ERROR: unresolved placeholders in:" >&2
-  echo "$leftover" >&2
+  printf '%s' "$leftover" >&2
   exit 1
 fi
 echo "OK: template synced, all placeholders resolved."

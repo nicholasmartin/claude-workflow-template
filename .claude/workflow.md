@@ -262,7 +262,46 @@ Each slash command interacts with GitHub in specific ways:
 
 ---
 
-## 8. Key Decisions and Rationale
+## 8. Hook Layer (Deterministic Validation)
+
+Validation conditions live in the harness, not in prompt prose. The agent supplies judgment (fixes, decisions); code supplies the triggers and the pass/fail checks. Configured in `.claude/settings.json`, implemented in `.claude/hooks/`.
+
+### The Three Tiers
+
+| Tier | Script | Trigger | Cost | Fail behavior |
+| ---- | ------ | ------- | ---- | ------------- |
+| **Per-edit** | `post-edit-lint.sh` | `PostToolUse` on Write\|Edit | ~ms (single file) | **Advisory** — exit 2 feeds stderr to the agent as feedback; the edit is never undone. Mid-flight breakage is legitimate. |
+| **Per-turn** | `stop-validate.sh` | `Stop` (turn ending) | seconds (incremental) | **Blocking** — exit 2 prevents the turn from ending; stderr becomes the agent's fix instructions. |
+| **Per-ship** | `pre-commit-scan.sh` | invoked by `/commit` (+ `.husky/pre-commit` on JS repos) | ~ms (staged files) | **Warn** — always exits 0; `/commit` relays findings and asks the user whether to proceed. |
+
+### What each tier checks
+
+- **Per-edit:** `.sh` → `bash -n`; `.ts/.tsx/.js/.jsx` → single-file `eslint --cache` (note: add `.eslintcache` to `.gitignore`). Other extensions skip instantly.
+- **Per-turn:** `tsc --noEmit --incremental` when `tsconfig.json` exists; then the project-local battery (below).
+- **Per-ship:** staged files scanned for `TODO/FIXME/HACK/XXX`, empty function bodies, empty `catch` blocks, `.only`/`.skip` in test files.
+
+### Design rules
+
+- **Graceful degradation:** every check first detects its tool (`package.json` + `npx --no-install`); missing tooling means silent exit 0, never an error. The template is language-agnostic.
+- **Cross-file checks belong to the Stop tier** (tsc can't meaningfully check one file); single-file checks belong to the per-edit tier. Test suites are in neither by default — too slow for a hook timeout; put them in the plan's validation commands or opt in via the local battery.
+- **Loop guard:** `stop-validate.sh` exits 0 when `stop_hook_active` is true (Claude Code also force-overrides after 8 consecutive blocks).
+- **Hooks run from the launch directory**, not the project root — scripts resolve paths via `$CLAUDE_PROJECT_DIR`.
+
+### Extension point: the project-local battery
+
+Create `.claude/hooks/validate-local.sh` (executable, exit non-zero on failure) to add project-specific checks to the Stop tier — migrations sanity, fast test subsets, custom invariants. It is intentionally NOT part of the template: it belongs to each project and survives template syncs.
+
+### Contracts commands rely on
+
+- `/execute` step 3: per-edit feedback arrives automatically — the command no longer instructs manual verification.
+- `/execute` step 5: the Stop battery is unskippable — the command only adds the plan's project-specific validation commands.
+- `/commit`: runs `pre-commit-scan.sh` and owns the warn-and-ask conversation.
+
+Changes to any hook script go through the `workflow` skill and must update this section in the same change.
+
+---
+
+## 9. Key Decisions and Rationale
 
 ### Why one project instead of multiple?
 
@@ -282,7 +321,7 @@ Sub-issues provide automatic progress tracking (the Epic shows "11/21 complete")
 
 ---
 
-## 9. Context Loading: 3-Tier System
+## 10. Context Loading: 3-Tier System
 
 This project uses progressive context disclosure to keep the context window focused on what matters for the current task.
 
@@ -308,12 +347,13 @@ When working on a task, prefer reading only the relevant sections of Tier 3 docs
 
 ---
 
-## 10. Changing This Workflow
+## 11. Changing This Workflow
 
 Use the `/workflow` skill when modifying this system. It ensures all related pieces get updated together:
 
 - This document (`.claude/workflow.md`)
 - Slash commands in `.claude/commands/`
+- Hooks (`.claude/settings.json`, `.claude/hooks/*.sh`)
 - CLAUDE.md rules
 - GitHub Project fields, views, and automations
 - Memory files

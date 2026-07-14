@@ -4,27 +4,20 @@ add the untracked and changed files
 
 ## Pre-Commit: Placeholder Scan
 
-Before committing, scan staged files for placeholders that should not ship:
+After staging, run the deterministic scan (detects TODO/FIXME markers, empty function bodies, empty catch blocks, and `.only`/`.skip` in test files — see workflow.md § Hook Layer):
 
 ```bash
-# Scan staged .ts/.tsx/.js/.jsx files for placeholder markers
-git diff --cached --name-only -- '*.ts' '*.tsx' '*.js' '*.jsx' | xargs grep -n -E '(TODO|FIXME|HACK|XXX)\b' 2>/dev/null || true
+./.claude/hooks/pre-commit-scan.sh
 ```
 
-Also check for empty function bodies in staged files:
+If it prints findings:
 
-```bash
-git diff --cached --name-only -- '*.ts' '*.tsx' '*.js' '*.jsx' | xargs grep -n -E '(function|=>)\s*\{\s*\}' 2>/dev/null || true
-```
-
-If any matches are found:
-
-- List them with file and line number
+- Relay them to the user with file and line numbers
 - **Warn the user** but do NOT block the commit
 - Ask: "Found [N] placeholder(s). Proceed with commit anyway?"
 - If the user says yes, continue. If no, stop so they can fix.
 
-If no matches are found, proceed silently.
+If it prints nothing, proceed silently.
 
 ## Commit
 

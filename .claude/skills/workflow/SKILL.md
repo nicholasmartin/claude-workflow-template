@@ -33,8 +33,9 @@ Read all of these before making any changes:
    - `.claude/commands/create-rules.md`
    - `.claude/commands/prime.md`
    - `.claude/commands/init-project.md`
-3. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
-4. **GitHub Project state:**
+3. **Hook layer:** `.claude/settings.json` (wiring) and `.claude/hooks/*.sh` (post-edit-lint, stop-validate, pre-commit-scan, optional validate-local)
+4. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
+5. **GitHub Project state:**
    ```bash
    # Fields
    gh project field-list 18 --owner @me --format json
@@ -42,7 +43,7 @@ Read all of these before making any changes:
    gh api graphql -f query='{ user(login: "nicholasmartin") { projectV2(number: 18) { views(first: 20) { nodes { name layout filter } } } } }'
    # Automations (check in UI, not available via API)
    ```
-5. **Memory files** in the memory directory that reference workflow or issue lifecycle
+6. **Memory files** in the memory directory that reference workflow or issue lifecycle
 
 ### Step 2: Identify the Change
 
@@ -66,6 +67,8 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/prime.md`
 - [ ] `.claude/commands/init-project.md`
 - [ ] `CLAUDE.md` (project rules)
+- [ ] `.claude/settings.json` (hook wiring)
+- [ ] `.claude/hooks/*.sh` (validation hook scripts)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)
 - [ ] GitHub Project automations (must be done in UI)
@@ -135,6 +138,7 @@ After implementing:
 ## Guardrails
 
 - **Never update a command without updating workflow.md** to match
+- **Never change a hook script or settings.json without updating workflow.md § Hook Layer** in the same change
 - **Never add a GitHub field without documenting it** in workflow.md section 2
 - **Never change label taxonomy without updating** workflow.md section 4
 - **Test command syntax** by reading the updated command file and verifying `gh` commands reference valid field/option IDs
