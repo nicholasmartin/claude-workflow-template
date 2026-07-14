@@ -57,7 +57,9 @@ Scouts are about to be spawned in parallel — an ambiguity discovered after the
 
 Research runs as three concurrent scout subagents. **Spawn all three as `Agent` tool calls in a single message so they run concurrently** — listing them as sequential steps serializes them.
 
-**Subagents see none of this conversation.** Each prompt must be self-contained: include the feature name, a one-paragraph description, the user story, and any constraints established in Phases 0–1. End every prompt with: *"Your final message is your report — return the structured findings, not a narrative of your process."*
+**Subagents see none of this conversation.** Each prompt must be self-contained: include the feature name, a one-paragraph description, the user story, and any constraints established in Phases 0–1. End every prompt with: *"You are a read-only scout: do NOT create or modify any files — your report is your only output. Your final message is your report — return the structured findings, not a narrative of your process."*
+
+Scouts are read-only by contract, not just by tooling: `general-purpose` scouts have write tools, and an unguarded one will helpfully write plan files that are the main session's job. The report is a scout's only deliverable.
 
 **Scout 1 — Codebase patterns** (`subagent_type: Explore`)
 

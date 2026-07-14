@@ -331,6 +331,7 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 - **Prompts are self-contained:** subagents see none of the parent conversation. Every prompt restates the feature, constraints, and the required report format.
 - **Evidence, not vibes:** scout reports must carry file:line evidence; the main session spot-checks load-bearing claims before building on them.
 - **Judgment stays home:** ambiguity clarification happens *before* the fan-out (scout work is wasted otherwise); synthesis and plan writing stay in the main session.
+- **Scouts are read-only by contract:** every scout prompt explicitly forbids creating or modifying files — `general-purpose` scouts carry write tools, so the prompt is the guard. A scout's report is its only deliverable.
 - **Type selection:** `Explore` for read-only research (fast; skips CLAUDE.md — tell it to read project rules when they matter); `general-purpose` when the task needs full tooling or project-rule context.
 - **Verifiers report, never repair:** the builder stays the only writer. A verifier returns a verdict; the builder fixes and re-verifies. **Verdict gate:** Final Validation cannot start with outstanding or failed verdicts.
 - **Hooks check conditions, verifiers check claims:** the Hook Layer (section 8) owns deterministic pass/fail (lint, typecheck, drift); verifiers own judgment about whether a task's claimed outcome actually holds. Neither replaces the other.
