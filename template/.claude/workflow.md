@@ -173,17 +173,23 @@ Before creating any issue, always run these checks:
    gh api graphql -f query='query { repository(owner: "{{REPO_OWNER}}", name: "{{REPO_NAME}}") { issue(number: EPIC_NUM) { subIssues(first: 50) { nodes { number title } } } } }' --jq '.data.repository.issue.subIssues.nodes[]'
    ```
 
-### Always required
+### The canonical path: create-issue.sh
 
-1. **Create the issue** with `gh issue create` (title, body, labels)
-2. **Add to project board** via GraphQL `addProjectV2ItemById`
-3. **Set Status field** (typically Backlog for new issues) via GraphQL `updateProjectV2ItemFieldValue`
-4. **Set Priority field** via GraphQL `updateProjectV2ItemFieldValue`. Labels alone do not set board fields.
+One call performs every required step (create + labels + board add + Status/Priority/Phase fields + optional epic link):
 
-### When the issue belongs to a Phase or Epic
+```bash
+./.claude/scripts/create-issue.sh --title "..." --body-file <path> \
+  --labels "phase:1,type:feature,priority:high" \
+  --phase "Phase 1" --priority High --status Backlog --parent <epic-number>
+```
 
-5. **Set Phase field** to the relevant phase
-6. **Add as sub-issue** of the Phase/Epic issue via GraphQL `addSubIssue` mutation. Every issue with a Phase field must be linked to its epic.
+Rules the script enforces (and that still apply if an issue is ever created manually):
+
+1. Every issue goes on the project board — labels alone do not set board fields
+2. Status is always set (Backlog for new issues unless specified)
+3. Priority is always set
+4. Every issue with a Phase field must be linked to its epic (`--parent`)
+5. Board moves later use `./.claude/scripts/move-issue.sh <number> <status>`
 
 ### Field IDs Reference
 
@@ -195,7 +201,9 @@ Before creating any issue, always run these checks:
 | Phase    | `{{PHASE_FIELD_ID}}`             | (populated as phases are created)                             |
 | Priority | `{{PRIORITY_FIELD_ID}}`          | Low: `{{PRIORITY_LOW_ID}}`, Medium: `{{PRIORITY_MEDIUM_ID}}`, High: `{{PRIORITY_HIGH_ID}}`, Critical: `{{PRIORITY_CRITICAL_ID}}` |
 
-### Example: Create issue with all fields set
+### Under the hood: what create-issue.sh does
+
+For reference (and for cases the script doesn't cover), the raw sequence:
 
 ```bash
 # 1. Create issue
@@ -247,12 +255,12 @@ Each slash command interacts with GitHub in specific ways:
 
 ### /continue
 
-- **Reads:** Project board state, open issues, git status
+- **Reads:** Project board state, open issues, git status (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
 - **Purpose:** Resume work by showing current state and suggesting next tasks
 
 ### /status
 
-- **Reads:** Project board state, open/closed issues, git log
+- **Reads:** Project board state, open/closed issues, git log (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
 - **Purpose:** Progress report across all phases
 
 ### /create-prd
@@ -354,6 +362,7 @@ Use the `/workflow` skill when modifying this system. It ensures all related pie
 - This document (`.claude/workflow.md`)
 - Slash commands in `.claude/commands/`
 - Hooks (`.claude/settings.json`, `.claude/hooks/*.sh`)
+- Plumbing scripts (`.claude/scripts/*.sh` — board-state, move-issue, create-issue)
 - CLAUDE.md rules
 - GitHub Project fields, views, and automations
 - Memory files

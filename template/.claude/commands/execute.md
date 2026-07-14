@@ -15,10 +15,7 @@ Read plan file: `$ARGUMENTS`
 
 - Ask the user which GitHub issue this plan implements (if not obvious from the plan)
 - Read the issue body: `gh issue view <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}}`
-- Move the board item to "In Progress":
-  1. Get the item ID: `gh project item-list {{PROJECT_NUMBER}} --owner @me --format json --jq '.items[] | select(.content.number == <NUMBER>) | .id'`
-  2. Get the Status field's "In Progress" option ID: `gh project field-list {{PROJECT_NUMBER}} --owner @me --format json` (find the Status field, then the "In Progress" option)
-  3. Update: `gh project item-edit --project-id {{PROJECT_ID}} --id <ITEM_ID> --field-id <STATUS_FIELD_ID> --single-select-option-id <IN_PROGRESS_ID>`
+- Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
 
 ### 1. Pre-flight Checks
 

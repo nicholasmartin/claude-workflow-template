@@ -10,24 +10,13 @@ Review current project state from the GitHub project board and open issues.
 
 ## Process
 
-### 1. Gather State
+### 1. State (auto-gathered)
 
-Run these commands:
+Board, open issues, and recently closed issues:
+!`./.claude/scripts/board-state.sh`
 
-```bash
-# Open issues with labels
-gh issue list --repo nicholasmartin/claude-workflow-template --state open --json number,title,labels,state --limit 50
-
-# Project board items with custom fields
-gh project item-list 18 --owner @me --format json
-
-# Recently closed issues
-gh issue list --repo nicholasmartin/claude-workflow-template --state closed --json number,title,closedAt --limit 10
-
-# Recent git activity
-git log --oneline -15
-git status
-```
+Recent git activity:
+!`git log --oneline -15; git status --porcelain`
 
 ### 2. Analyze Progress
 

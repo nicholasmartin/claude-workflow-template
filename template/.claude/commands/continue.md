@@ -2,29 +2,13 @@
 
 You are resuming work on this project. Follow this procedure exactly.
 
-## Step 1: Gather current state
+## Step 1: Current state (auto-gathered)
 
-Run these commands to understand where things stand:
+Board and issue state:
+!`./.claude/scripts/board-state.sh`
 
-1. Fetch open issues with labels and priority context:
-
-```
-gh issue list --repo {{REPO_OWNER}}/{{REPO_NAME}} --state open --json number,title,labels,state --limit 50
-```
-
-2. Fetch project board items with custom field values (Phase, Priority, Status):
-
-```
-gh project item-list {{PROJECT_NUMBER}} --owner @me --format json
-```
-
-3. Check git state (branch, uncommitted work, recent history):
-
-```
-git status
-git log --oneline -10
-git branch --show-current
-```
+Git state:
+!`git status --porcelain; git log --oneline -10; git branch --show-current`
 
 ## Step 2: Analyze and report
 

@@ -15,10 +15,7 @@ Read plan file: `$ARGUMENTS`
 
 - Ask the user which GitHub issue this plan implements (if not obvious from the plan)
 - Read the issue body: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
-- Move the board item to "In Progress":
-  1. Get the item ID: `gh project item-list 18 --owner @me --format json --jq '.items[] | select(.content.number == <NUMBER>) | .id'`
-  2. Get the Status field's "In Progress" option ID: `gh project field-list 18 --owner @me --format json` (find the Status field, then the "In Progress" option)
-  3. Update: `gh project item-edit --project-id PVT_kwHOAC3aXM4BdVs6 --id <ITEM_ID> --field-id <STATUS_FIELD_ID> --single-select-option-id <IN_PROGRESS_ID>`
+- Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
 
 ### 1. Pre-flight Checks
 

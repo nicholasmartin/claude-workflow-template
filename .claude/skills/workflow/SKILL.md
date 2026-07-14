@@ -34,8 +34,9 @@ Read all of these before making any changes:
    - `.claude/commands/prime.md`
    - `.claude/commands/init-project.md`
 3. **Hook layer:** `.claude/settings.json` (wiring) and `.claude/hooks/*.sh` (post-edit-lint, stop-validate, pre-commit-scan, optional validate-local)
-4. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
-5. **GitHub Project state:**
+4. **Plumbing scripts:** `.claude/scripts/*.sh` (board-state, move-issue, create-issue — the canonical GitHub interaction path)
+5. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
+6. **GitHub Project state:**
    ```bash
    # Fields
    gh project field-list 18 --owner @me --format json
@@ -43,7 +44,7 @@ Read all of these before making any changes:
    gh api graphql -f query='{ user(login: "nicholasmartin") { projectV2(number: 18) { views(first: 20) { nodes { name layout filter } } } } }'
    # Automations (check in UI, not available via API)
    ```
-6. **Memory files** in the memory directory that reference workflow or issue lifecycle
+7. **Memory files** in the memory directory that reference workflow or issue lifecycle
 
 ### Step 2: Identify the Change
 
@@ -69,6 +70,7 @@ Map the change against all components. Check each box for components that need u
 - [ ] `CLAUDE.md` (project rules)
 - [ ] `.claude/settings.json` (hook wiring)
 - [ ] `.claude/hooks/*.sh` (validation hook scripts)
+- [ ] `.claude/scripts/*.sh` (board plumbing: board-state, move-issue, create-issue)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)
 - [ ] GitHub Project automations (must be done in UI)
