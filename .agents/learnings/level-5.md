@@ -167,9 +167,35 @@ deferred these three findings to it):
    feedback within the same tool call; the Stop battery (`validate-local.sh`)
    also ran green in-worktree.
 
-## Walkthrough log (pending)
+## Walkthrough log (2026-07-15, live, two terminals)
 
-Owner walkthrough not yet performed. Per the hard-gate rule: sign-off is
-recorded as a comment on epic #29; **no Level 6 work starts before it.** The
-walkthrough script above is ready to run; steps 2–5 are the PRD Phase 5
-validation ("2–3 terminal live test on real issues").
+Performed live on real issue #33 (this level's own gate task), owner at
+terminal 2, orchestrating session at terminal 1 in the main checkout:
+
+1. **Static greps** — all seven issue-linked/lifecycle commands carry
+   `claim-issue.sh` (execute 1, execute-team 1, execute-isolated 4, hotfix 1,
+   bug 1, commit 1, continue 1); chore 0. ✓
+2. **Multi-terminal claim awareness (PRD Phase 5 validation)** — terminal 1
+   created worktree `walkthrough-demo` and claimed #33 for it; terminal 2's
+   `/continue` showed the Claim column (`walkthrough-demo` on #33, `—` on
+   #29), correctly judged the claim **not stale** (worktree present in
+   `git worktree list`), and refused to take #33 without the owner's say-so —
+   even adding its own judgment that the branch had no commits. ✓
+3. **Deliberate collision** — terminal 1 (identity `main`) tried to claim the
+   owned issue: `CLAIM COLLISION: issue #33 already claimed by
+   worktree:walkthrough-demo`, exit 3, exactly one claim label retained. ✓
+4. **Stale detection** — the worktree was removed out from under the claim;
+   terminal 2's next `/continue` flagged the claim stale, cited the rule, and
+   asked before clearing (rule 7 honored — no silent takeover). ✓
+5. **Release + GC** — owner consented; terminal 2 released; verified from
+   terminal 1: label off the issue, **zero** `worktree:*` label objects
+   remaining (untruncated `--limit 200` check). ✓
+
+Observed bonus: two sessions coordinating on the *same* gate task ended the
+walkthrough with terminal 2 offering to claim #33 as `main` — the exact
+scenario the convention arbitrates. Terminal 1 finished the gate; terminal 2
+stood down.
+
+Owner sign-off recorded as a comment on epic #29 — the gate's explicit logged
+act. Level 6 planning may begin. (Next up per owner decision: Level 6 becomes
+the PR-handoff ship layer; automated triage moves to Level 7.)
