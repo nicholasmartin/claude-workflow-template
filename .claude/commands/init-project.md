@@ -143,7 +143,7 @@ test -f CLAUDE.md && echo "  CLAUDE.md: EXISTS (will be regenerated)" || echo " 
 test -f .claude/workflow.md && echo "  .claude/workflow.md: EXISTS" || echo "  .claude/workflow.md: not found"
 
 # Commands - check if any custom commands exist that would be overwritten
-for cmd in commit continue execute plan-feature status create-prd create-rules prime; do
+for cmd in commit continue execute execute-team hotfix chore bug plan-feature plan-hotfix plan-bug status create-prd create-rules prime; do
   test -f ".claude/commands/$cmd.md" && echo "  .claude/commands/$cmd.md: EXISTS"
 done
 
@@ -545,7 +545,7 @@ Report to the user:
 - GitHub Project board with Status, Phase, Priority fields
 - 17 labels (phase, type, priority, source)
 - Workflow configuration in .claude/workflow.md
-- 9 slash commands configured
+- 15 slash commands configured
 - CLAUDE.md (generated or starter)
 - Auto-format on commit (if configured): Husky + lint-staged + Prettier
 

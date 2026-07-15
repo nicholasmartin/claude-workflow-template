@@ -27,7 +27,13 @@ Read all of these before making any changes:
    - `.claude/commands/commit.md`
    - `.claude/commands/continue.md`
    - `.claude/commands/execute.md`
+   - `.claude/commands/execute-team.md`
+   - `.claude/commands/hotfix.md`
+   - `.claude/commands/chore.md`
+   - `.claude/commands/bug.md`
    - `.claude/commands/plan-feature.md`
+   - `.claude/commands/plan-hotfix.md`
+   - `.claude/commands/plan-bug.md`
    - `.claude/commands/status.md`
    - `.claude/commands/create-prd.md`
    - `.claude/commands/create-rules.md`
@@ -61,7 +67,13 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/commit.md`
 - [ ] `.claude/commands/continue.md`
 - [ ] `.claude/commands/execute.md`
+- [ ] `.claude/commands/execute-team.md`
+- [ ] `.claude/commands/hotfix.md`
+- [ ] `.claude/commands/chore.md`
+- [ ] `.claude/commands/bug.md`
 - [ ] `.claude/commands/plan-feature.md`
+- [ ] `.claude/commands/plan-hotfix.md`
+- [ ] `.claude/commands/plan-bug.md`
 - [ ] `.claude/commands/status.md`
 - [ ] `.claude/commands/create-prd.md`
 - [ ] `.claude/commands/create-rules.md`

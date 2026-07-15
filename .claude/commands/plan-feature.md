@@ -121,6 +121,7 @@ Required report format: exemplar files with line refs; exact validation commands
 - Design for extensibility and future modifications
 - Plan for backward compatibility if needed
 - Consider scalability implications
+- Decide the executor: single-domain plan → `/execute`; multi-component plan with a populated INTEGRATION CONTRACTS section → `/execute-team`. Record the choice and rationale in the plan's NOTES.
 
 ### Phase 5: Plan Structure Generation
 
@@ -525,6 +526,7 @@ After creating the Plan:
    - Summary of feature and approach
    - Full path to created Plan file
    - GitHub issue reference (e.g., "This implements GH #61")
+   - Recommended executor (`/execute` or `/execute-team`) with one-line rationale, derived from the plan's INTEGRATION CONTRACTS section
    - Complexity assessment
    - Key implementation risks or considerations
    - Estimated confidence score for one-pass success

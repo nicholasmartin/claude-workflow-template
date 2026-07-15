@@ -249,6 +249,40 @@ Each slash command interacts with GitHub in specific ways:
 - **Updates:** Moves board item to "In Progress", checks off AC in issue body as steps complete
 - **Post-execution:** Comments on issue with summary (including verifier verdicts), notes readiness for `/commit`
 
+### /execute-team
+
+- **Reads:** Plan file (passed as argument), especially its Integration Contracts section
+- **Spawns:** teammate agents (2–5) via the experimental agent-teams feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) — the lead distributes contract slices and coordinates; falls back to `/execute` with a clear message when the flag is unset (see section 9, Subagent Layer)
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, checks off AC in issue body
+- **Post-execution:** Comments a per-agent summary; leaves the issue open — only `/commit` closes issues
+
+### /hotfix
+
+- **Reads:** Issue body, if an issue number was given (an issue is optional — never created)
+- **Updates:** Moves board item **Status** to "In Progress" via `move-issue.sh` — Status only, never the Phase field
+- **No plan file, no subagents:** speed-first single agent; hands off to `/commit` with a `fix:` tag
+
+### /bug
+
+- **Reads:** Issue body **and comments** (`gh issue view --comments`) — the issue is the repro source
+- **Contract:** a failing repro (test, or recorded manual repro) must exist **before** any fix is applied
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, checks off satisfied AC, comments repro + fix summary; leaves the issue open for `/commit`
+
+### /chore
+
+- **Does not interact with GitHub** (like `/create-prd`) — no issue created, linked, or closed; no board calls; no plan file; no subagents
+- **Post-execution:** hands off to `/commit` with a `chore:` (or `docs:`) tag; `/commit`'s issue step naturally no-ops
+
+### /plan-hotfix
+
+- **Reads:** Issue body if a number was given, plus directly implicated files only
+- **Creates:** Minimal plan file `.agents/plans/hotfix-<slug>.md` (≤40 lines) — no board writes
+
+### /plan-bug
+
+- **Reads:** Issue body + comments, referenced logs/traces, implicated code paths
+- **Creates:** Minimal plan file `.agents/plans/bug-<issue>-<slug>.md` (≤80 lines) with a failing-test-first task order — no board writes
+
 ### /commit
 
 - **Reads:** Open issues list to find related issues
@@ -324,6 +358,7 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 | `/plan-feature` | Testing-patterns scout | `Explore` | Test framework, exemplar tests, runnable validation commands, `.claude/docs/` relevance | Exemplars with line refs + exact commands |
 | `/execute` | Task verifier (one per task) | `Explore` | Independently confirms a task's VERIFY/DONE claims after its VALIDATE passes | `VERDICT: PASS` or `VERDICT: FAIL — <evidence>` |
 | `/execute` | Observable-Truths verifier | `Explore` | Confirms every plan-level Observable Truth before the output report | Per-truth PASS/FAIL with evidence |
+| `/execute-team` | Teammate agents (2–5) | agent-teams (experimental) | Parallel component builds against contract slices, exclusive file ownership | Contract-conformant components + cross-review notes |
 
 ### Design Rules
 
@@ -335,6 +370,7 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 - **Type selection:** `Explore` for read-only research (fast; skips CLAUDE.md — tell it to read project rules when they matter); `general-purpose` when the task needs full tooling or project-rule context.
 - **Verifiers report, never repair:** the builder stays the only writer. A verifier returns a verdict; the builder fixes and re-verifies. **Verdict gate:** Final Validation cannot start with outstanding or failed verdicts.
 - **Hooks check conditions, verifiers check claims:** the Hook Layer (section 8) owns deterministic pass/fail (lint, typecheck, drift); verifiers own judgment about whether a task's claimed outcome actually holds. Neither replaces the other.
+- **Light variants spawn no subagents by design:** `/hotfix`, `/chore`, and `/bug` are single-agent on purpose — weight-matching is the feature. (`/plan-bug` may spend at most one `Explore` scout, stated explicitly.)
 
 ### The Integration Contracts Convention
 
@@ -346,7 +382,7 @@ Every plan produced by `/plan-feature` contains an `## INTEGRATION CONTRACTS` se
 4. Error responses specified per failure mode (404 body, 422 body, ...)
 5. State/storage semantics explicit (e.g., accumulated vs per-chunk)
 
-Plus: component file-ownership boundaries (owns / must-not-touch) and a cross-cutting-concerns table where each concern has **exactly one owner**. Single-component plans state "Single-component feature — no cross-component contracts." explicitly. The consumer is any multi-component executor (a team-based executor arrives in a later phase); the section also sharpens single-agent execution.
+Plus: component file-ownership boundaries (owns / must-not-touch) and a cross-cutting-concerns table where each concern has **exactly one owner**. Single-component plans state "Single-component feature — no cross-component contracts." explicitly. The consumer is any multi-component executor — the team-based executor is `/execute-team`, which reads this section, confirms completeness, and hands each teammate its contract slice; the section also sharpens single-agent execution.
 
 Changes to scout/verifier prompt specs in command files go through the `workflow` skill and must update this section in the same change.
 
