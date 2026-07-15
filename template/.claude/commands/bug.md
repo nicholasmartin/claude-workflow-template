@@ -15,6 +15,7 @@ The issue is the repro source — read all of it, including discussion:
 
 - `gh issue view <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --comments`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
 
 Extract from the issue: the observed behavior, the expected behavior, repro steps if given, and any logs/stack traces in the body or comments.
 

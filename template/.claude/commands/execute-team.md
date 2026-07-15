@@ -35,6 +35,7 @@ Before building, wire this run into the board (same as `/execute`):
 - Ask which issue this plan implements, if it isn't obvious from the plan.
 - Read it: `gh issue view <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}}`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
 
 **Never close issues or move them to Done here — only `/commit` closes issues.**
 

@@ -16,7 +16,7 @@ Board, open issues, and recently closed issues:
 !`./.claude/scripts/board-state.sh`
 
 Recent git activity:
-!`git log --oneline -15; git status --porcelain`
+!`git log --oneline -15; git status --porcelain; git worktree list`
 
 ### 2. Analyze Progress
 
@@ -38,6 +38,11 @@ Provide a concise summary:
 | In Progress | N | #X, #Y |
 | Ready | N | #X, #Y |
 | Backlog | N | ... |
+
+**Session Claims:**
+- In Progress issues with their claim owner (`worktree:<name>` label, or unclaimed)
+- Flag **stale** claims — the claimed worktree is missing from `git worktree list`
+  and isn't `main`. Report only; clearing a claim is `/continue`'s job, with user consent
 
 **Recently Completed:**
 - List issues closed in the last week

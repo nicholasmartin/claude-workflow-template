@@ -22,7 +22,7 @@ case "$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')" in
   *) usage ;;
 esac
 
-ITEM_ID="$(gh project item-list {{PROJECT_NUMBER}} --owner @me --format json \
+ITEM_ID="$(gh project item-list {{PROJECT_NUMBER}} --owner @me --format json --limit 200 \
   --jq ".items[] | select(.content.number == $NUM) | .id")"
 if [ -z "$ITEM_ID" ]; then
   echo "error: issue #$NUM is not on project board #{{PROJECT_NUMBER}}" >&2

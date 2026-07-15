@@ -107,6 +107,7 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 | **Priority** | `priority:critical`, `priority:high`, `priority:medium`, `priority:low`                         | How urgent                    |
 | **Area**     | (project-specific, add as needed)                                                                | What part of the system       |
 | **Source**   | `source:research`, `source:user-report`, `source:internal`                                      | Where the issue came from     |
+| **Worktree** | `worktree:<name>` (dynamic — created/removed by `claim-issue.sh`, never pre-created)             | Session ownership claim (see section 10) |
 
 ---
 
@@ -248,35 +249,35 @@ Each slash command interacts with GitHub in specific ways:
 
 - **Reads:** Plan file (passed as argument)
 - **Spawns:** one task verifier per completed task + a final Observable-Truths verifier (see section 9, Subagent Layer)
-- **Updates:** Moves board item to "In Progress", checks off AC in issue body as steps complete
+- **Updates:** Moves board item to "In Progress", claims the issue (`claim-issue.sh` — see section 10), checks off AC in issue body as steps complete
 - **Post-execution:** Comments on issue with summary (including verifier verdicts), notes readiness for `/commit`
 
 ### /execute-team
 
 - **Reads:** Plan file (passed as argument), especially its Integration Contracts section
 - **Spawns:** teammate agents (2–5) via the experimental agent-teams feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) — the lead distributes contract slices and coordinates; falls back to `/execute` with a clear message when the flag is unset (see section 9, Subagent Layer)
-- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, checks off AC in issue body
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue (`claim-issue.sh` — see section 10), checks off AC in issue body
 - **Post-execution:** Comments a per-agent summary; leaves the issue open — only `/commit` closes issues
 
 ### /execute-isolated
 
 - **Reads:** Plan file (passed as argument) — read in full **before** entering the worktree (worktrees branch from the remote default branch; an uncommitted plan file won't exist inside)
 - **Spawns:** whatever the plan's recommended executor spawns — `/execute`'s verifier roster by default, or `/execute-team`'s teammates when the plan recommends the team executor and the agent-teams flag is set (flag unset → single-agent `/execute` inside the same worktree)
-- **Updates:** Moves board item to "In Progress" via `move-issue.sh`
-- **Post-execution:** `/commit` runs on the worktree branch; then `ExitWorktree (keep)` → merge back from the main checkout → worktree/branch cleanup. Rollback path: `ExitWorktree (remove)` — the main tree is never touched
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue for the run's worktree (`claim-issue.sh <N> claim <slug>` — see section 10)
+- **Post-execution:** `/commit` runs on the worktree branch; then `ExitWorktree (keep)` → merge back from the main checkout → worktree/branch cleanup → claim release. Rollback path: `ExitWorktree (remove)` + claim release — the main tree is never touched
 - **Fallback:** falls back to plain `/execute` with a clear message when worktree tools are unavailable
 
 ### /hotfix
 
 - **Reads:** Issue body, if an issue number was given (an issue is optional — never created)
-- **Updates:** Moves board item **Status** to "In Progress" via `move-issue.sh` — Status only, never the Phase field
+- **Updates:** Moves board item **Status** to "In Progress" via `move-issue.sh` — Status only, never the Phase field; claims the issue (`claim-issue.sh` — see section 10)
 - **No plan file, no subagents:** speed-first single agent; hands off to `/commit` with a `fix:` tag
 
 ### /bug
 
 - **Reads:** Issue body **and comments** (`gh issue view --comments`) — the issue is the repro source
 - **Contract:** a failing repro (test, or recorded manual repro) must exist **before** any fix is applied
-- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, checks off satisfied AC, comments repro + fix summary; leaves the issue open for `/commit`
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue (`claim-issue.sh` — see section 10), checks off satisfied AC, comments repro + fix summary; leaves the issue open for `/commit`
 
 ### /chore
 
@@ -296,18 +297,18 @@ Each slash command interacts with GitHub in specific ways:
 ### /commit
 
 - **Reads:** Open issues list to find related issues
-- **Updates:** Comments on related issues with commit hash, checks off completed AC, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon)
+- **Updates:** Comments on related issues with commit hash, checks off completed AC, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon), then releases each closed issue's ownership claim via `claim-issue.sh <N> release` (see section 10)
 - **AI context tracking:** When staged files include AI context assets (`.claude/rules/`, `.claude/commands/`, `.claude/docs/`, `.claude/skills/`, `CLAUDE.md`, `.claude/workflow.md`), a `Context:` section is appended to the commit body describing what changed and why.
 
 ### /continue
 
-- **Reads:** Project board state, open issues, git status (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
-- **Purpose:** Resume work by showing current state and suggesting next tasks
+- **Reads:** Project board state, open issues, git status + `git worktree list` (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
+- **Purpose:** Resume work by showing current state and suggesting next tasks — claim-aware: surfaces `worktree:*` ownership, skips issues claimed by other sessions, flags stale claims (see section 10)
 
 ### /status
 
-- **Reads:** Project board state, open/closed issues, git log (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
-- **Purpose:** Progress report across all phases
+- **Reads:** Project board state, open/closed issues, git log + `git worktree list` (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
+- **Purpose:** Progress report across all phases, including session-claim ownership (report-only — see section 10)
 
 ### /create-prd
 
@@ -399,7 +400,51 @@ Changes to scout/verifier prompt specs in command files go through the `workflow
 
 ---
 
-## 10. Key Decisions and Rationale
+## 10. Coordination Layer (Cross-Session)
+
+Multiple Claude Code sessions — one per terminal, each typically in its own git
+worktree — coordinate through GitHub as a **shared blackboard**. `gh` always hits
+the remote, so board Status, labels, and comments are visible from every worktree
+by construction; the working trees stay isolated, the coordination state does not.
+
+### Ownership claims
+
+A **claim** is a dynamic `worktree:<name>` label on an issue, managed by
+`.claude/scripts/claim-issue.sh`:
+
+- **Claim identity:** the worktree slug (`worktree:level-5-coordination`), or
+  `main` for the main checkout. At most one main-checkout execution session runs
+  at a time — that is the operator's job, not the tooling's.
+- **Claim at pickup:** every issue-linked executor (`/execute`, `/execute-team`,
+  `/execute-isolated`, `/hotfix`, `/bug`) claims right after moving the item to
+  "In Progress". Planning commands do **not** claim — plans are read-mostly and
+  live in the main tree.
+- **Visible everywhere free of charge:** claims are labels, so they arrive in
+  `board-state.sh` output (issues *and* board items) with zero extra API calls.
+- **Release:** `/commit` releases claims on every issue it closes;
+  `/execute-isolated` releases after merge-back or rollback. `release` also
+  deletes the label object once no open issue carries it (self-cleaning — the
+  taxonomy row in section 4 documents a *pattern*, not a fixed label set).
+
+### Collision rule
+
+GitHub has no compare-and-swap: two sessions *can* both "successfully" add a
+claim. `claim-issue.sh` therefore re-reads the issue after writing; if more than
+one `worktree:*` label is present, the **later writer backs off** (removes its
+label, exits 3 with `CLAIM COLLISION`). The executor stops and the operator
+routes the session elsewhere.
+
+### Stale claims
+
+Sessions die; worktrees get deleted without ceremony. A claim is **stale** when
+its worktree is absent from `git worktree list` and the claim isn't `main`.
+`/continue` and `/status` flag stale claims; only `/continue` may clear one
+(`claim-issue.sh <N> release`) and **only with the user's consent** — never
+silently take over claimed work.
+
+---
+
+## 11. Key Decisions and Rationale
 
 ### Why one project instead of multiple?
 
@@ -419,7 +464,7 @@ Sub-issues provide automatic progress tracking (the Epic shows "11/21 complete")
 
 ---
 
-## 11. Context Loading: 3-Tier System
+## 12. Context Loading: 3-Tier System
 
 This project uses progressive context disclosure to keep the context window focused on what matters for the current task.
 
@@ -445,14 +490,14 @@ When working on a task, prefer reading only the relevant sections of Tier 3 docs
 
 ---
 
-## 12. Changing This Workflow
+## 13. Changing This Workflow
 
 Use the `/workflow` skill when modifying this system. It ensures all related pieces get updated together:
 
 - This document (`.claude/workflow.md`)
 - Slash commands in `.claude/commands/`
 - Hooks (`.claude/settings.json`, `.claude/hooks/*.sh`)
-- Plumbing scripts (`.claude/scripts/*.sh` — board-state, move-issue, create-issue)
+- Plumbing scripts (`.claude/scripts/*.sh` — board-state, move-issue, create-issue, claim-issue)
 - CLAUDE.md rules
 - GitHub Project fields, views, and automations
 - Memory files
