@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph MAIN["Main checkout (master) — never touched until merge"]
+        A["/execute-isolated plan.md"] --> B{"Step 1: EnterWorktree\ntool available?"}
+        B -- no --> B2["STOP → run /execute plan.md\n(main-tree fallback)"]
+        B -- yes --> C["Step 2: read plan IN FULL\n(worktree branches from origin/HEAD —\nuncommitted plan won't exist inside)"]
+        C --> D["Step 3: issue → In Progress\n(move-issue.sh; never close here)"]
+    end
+
+    D --> E["Step 4: EnterWorktree name=plan-slug\n→ .claude/worktrees/plan-slug/"]
+
+    subgraph WT["Worktree (throwaway checkout, own branch)"]
+        E --> F{"Step 5: executor per plan NOTES"}
+        F -- default --> G["/execute steps 1–6\n(task loop, verifiers, verdict gate,\nObservable-Truths verifier)"]
+        F -- "plan recommends team" --> H{"CLAUDE_CODE_EXPERIMENTAL_\nAGENT_TEAMS set?"}
+        H -- yes --> I["/execute-team from Step 1\n(lead + teammates; lifecycle\nstays with this session)"]
+        H -- no --> G
+        G --> J["Step 6: /commit\n(lands on worktree branch;\ncloses issues as always)"]
+        I --> J
+    end
+
+    J --> K["Step 7: ExitWorktree action=keep\n(NEVER remove before merge —\nremove deletes branch + work)"]
+
+    subgraph MERGE["Back in main checkout (merges serialize)"]
+        K --> L["git merge --no-ff worktree-branch"]
+        L --> M["git worktree remove + git branch -d\n(clean up)"]
+    end
+
+    WT -. "abandon run" .-> R["Rollback: ExitWorktree action=remove\n(refuses on unmerged work →\nuser-confirmed discard_changes)\nmain tree untouched"]
+
+    style MAIN fill:#e8f4e8,stroke:#2d6a2d
+    style WT fill:#e8eef8,stroke:#2d4a6a
+    style MERGE fill:#e8f4e8,stroke:#2d6a2d
+    style R fill:#f8e8e8,stroke:#6a2d2d
+    style B2 fill:#f8f0e0,stroke:#6a5a2d

@@ -28,6 +28,7 @@ Read all of these before making any changes:
    - `.claude/commands/continue.md`
    - `.claude/commands/execute.md`
    - `.claude/commands/execute-team.md`
+   - `.claude/commands/execute-isolated.md`
    - `.claude/commands/hotfix.md`
    - `.claude/commands/chore.md`
    - `.claude/commands/bug.md`
@@ -68,6 +69,7 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/continue.md`
 - [ ] `.claude/commands/execute.md`
 - [ ] `.claude/commands/execute-team.md`
+- [ ] `.claude/commands/execute-isolated.md`
 - [ ] `.claude/commands/hotfix.md`
 - [ ] `.claude/commands/chore.md`
 - [ ] `.claude/commands/bug.md`

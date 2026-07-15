@@ -258,6 +258,14 @@ Each slash command interacts with GitHub in specific ways:
 - **Updates:** Moves board item to "In Progress" via `move-issue.sh`, checks off AC in issue body
 - **Post-execution:** Comments a per-agent summary; leaves the issue open — only `/commit` closes issues
 
+### /execute-isolated
+
+- **Reads:** Plan file (passed as argument) — read in full **before** entering the worktree (worktrees branch from the remote default branch; an uncommitted plan file won't exist inside)
+- **Spawns:** whatever the plan's recommended executor spawns — `/execute`'s verifier roster by default, or `/execute-team`'s teammates when the plan recommends the team executor and the agent-teams flag is set (flag unset → single-agent `/execute` inside the same worktree)
+- **Updates:** Moves board item to "In Progress" via `move-issue.sh`
+- **Post-execution:** `/commit` runs on the worktree branch; then `ExitWorktree (keep)` → merge back from the main checkout → worktree/branch cleanup. Rollback path: `ExitWorktree (remove)` — the main tree is never touched
+- **Fallback:** falls back to plain `/execute` with a clear message when worktree tools are unavailable
+
 ### /hotfix
 
 - **Reads:** Issue body, if an issue number was given (an issue is optional — never created)
@@ -373,6 +381,7 @@ Agent-heavy phases fan work out to subagents via the `Agent` tool. The main sess
 - **Verifiers report, never repair:** the builder stays the only writer. A verifier returns a verdict; the builder fixes and re-verifies. **Verdict gate:** Final Validation cannot start with outstanding or failed verdicts.
 - **Hooks check conditions, verifiers check claims:** the Hook Layer (section 8) owns deterministic pass/fail (lint, typecheck, drift); verifiers own judgment about whether a task's claimed outcome actually holds. Neither replaces the other.
 - **Light variants spawn no subagents by design:** `/hotfix`, `/chore`, and `/bug` are single-agent on purpose — weight-matching is the feature. (`/plan-bug` may spend at most one `Explore` scout, stated explicitly.)
+- **Worktree lifecycle is never delegated:** `/execute-isolated` owns enter/exit/merge in the wrapping session — teammates and subagents never call `EnterWorktree`/`ExitWorktree` (subagents cannot call `ExitWorktree` at all). It adds no new subagent types of its own; it reuses whichever executor roster the plan recommends.
 
 ### The Integration Contracts Convention
 

@@ -60,7 +60,7 @@ There is no build, no package.json, no test framework — validation is structur
 /
 ├── template/            # THE PRODUCT: what gets copied into user projects
 │   ├── .claude/
-│   │   ├── commands/    # 15 slash commands (plan-feature, execute, execute-team, hotfix, bug, chore, ...)
+│   │   ├── commands/    # 16 slash commands (plan-feature, execute, execute-team, hotfix, bug, chore, ...)
 │   │   ├── skills/      # workflow skill (meta: modify the system safely)
 │   │   ├── rules/       # example path-scoped rules
 │   │   ├── docs/        # example scout-friendly reference docs
