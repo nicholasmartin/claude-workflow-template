@@ -138,6 +138,15 @@ Field IDs live in `.claude/workflow.md` (Field IDs Reference) and `scripts/workf
 
 ## Notes
 
+- **⚠️ NEXT SESSION — read before any Level 6/7 work:** Levels 1–5 are complete
+  and signed off (epic #29 closed 2026-07-15). The roadmap was **re-cut at Level 5
+  close**: **Level 6 = PR-handoff ship layer** (port `/pr` from
+  `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`), **automated
+  triage moves to Level 7**. The roadmap docs are NOT yet amended — the **first
+  step** is to rewrite `AGENTIC-EVOLUTION.md` Level 6 (see the RE-CUT banner
+  there for the agreed design) and `.claude/PRD.md` §7/§12, **then**
+  `/plan-feature level 6`.
+
 - When a change touches the workflow system itself (commands, board schema, labels), use the `workflow` skill — it enforces updating all related pieces together.
 - The `workflow` skill's guardrail applies doubly here: never update a command without updating `workflow.md`, and never update either without re-running the sync.
 - Board Status options were set via the `updateProjectV2Field` GraphQL mutation — despite `init-project.md` claiming this needs the UI. That command should be updated (candidate dogfood fix).

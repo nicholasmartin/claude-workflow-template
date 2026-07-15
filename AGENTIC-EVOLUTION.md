@@ -166,6 +166,18 @@ GitHub Issues + Projects = the shared blackboard (already have this). `/continue
 
 ---
 
+> **⚠️ ROADMAP RE-CUT (owner decision, 2026-07-15 — amendment pending):**
+> **Level 6 is now the PR-handoff ship layer**, and the automated triage below
+> **moves to Level 7.** Driven by consultation work on multi-dev repos: the
+> handoff is "push branch → open PR → reviewer assigned → someone else merges."
+> Design agreed at Level 5 close: `SHIP_FLOW=merge|pr` in workflow.env; `/pr`
+> command ported from `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`
+> (never-merges contract, consent-only rebase, `--reviewer`); `/commit` stops
+> closing issues in pr mode (`Closes #N` fires on merge); new "In Review" board
+> Status; `/continue` reconciles merged-PR issues (board Done + claim release).
+> **First step of any Level 6 work: rewrite this section and PRD §7/§12 to
+> match, then `/plan-feature level 6`. Do not plan from the section below as-is.**
+
 ### Level 6 — Automated triage (aspirational)
 
 Dan's **factory router agent**. With **scheduled agents** (`CronCreate` / the `schedule` skill) you can:
