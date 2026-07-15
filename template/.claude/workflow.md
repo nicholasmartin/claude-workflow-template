@@ -50,6 +50,8 @@ This document defines how {{PROJECT_NAME}} manages work through GitHub Issues, P
 | Item closed  | Issue closed              | Set Status to Done   |
 | Auto-archive | Item in Done for 14+ days | Archive item         |
 
+> **Automations are optional UI configuration** — they must be enabled manually in the project's ⚙ Workflows settings (`/init-project` Step 8 prompts this) and cannot be created or verified via the API. **No command relies on them:** `/commit` moves closed items to Done explicitly via `move-issue.sh`. When enabled, automations are a redundant safety net covering closes that happen outside `/commit` (UI, raw `gh issue close`).
+
 ---
 
 ## 3. Issue Hierarchy
@@ -286,7 +288,7 @@ Each slash command interacts with GitHub in specific ways:
 ### /commit
 
 - **Reads:** Open issues list to find related issues
-- **Updates:** Comments on related issues with commit hash, checks off completed AC, closes issues when all AC met
+- **Updates:** Comments on related issues with commit hash, checks off completed AC, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon)
 - **AI context tracking:** When staged files include AI context assets (`.claude/rules/`, `.claude/commands/`, `.claude/docs/`, `.claude/skills/`, `CLAUDE.md`, `.claude/workflow.md`), a `Context:` section is appended to the commit body describing what changed and why.
 
 ### /continue

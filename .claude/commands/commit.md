@@ -67,6 +67,7 @@ After committing, check if the work completed relates to any open GitHub issues:
    - Comment on the issue with the commit hash: `gh issue comment <NUMBER> --repo nicholasmartin/claude-workflow-template --body "Progress: <commit-hash> - <brief description of what was done>"`
    - If the issue has acceptance criteria checkboxes and any are now satisfied, update the issue body to check them off
    - If ALL acceptance criteria are complete, close the issue: `gh issue close <NUMBER> --repo nicholasmartin/claude-workflow-template --comment "All acceptance criteria met in <commit-hash>."`
+   - **After every close, set the board Status yourself:** `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT move its board item. The "item closed → Done" automation is optional UI configuration that may not be enabled; never rely on it. This applies to feature issues and task sub-issues alike.
    - **Task sub-issues:** When closing a feature issue, check if it has task sub-issues:
      ```bash
      gh api graphql -f query='query { repository(owner: "nicholasmartin", name: "claude-workflow-template") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state } } } } }'
