@@ -134,6 +134,21 @@ never coordination state.
    existing output for both issues and board items — comments would have cost
    one extra `gh` call per issue. The one thing comments do better (server
    timestamps for ordering) is covered by the collision re-read.
+4. **Live validation caught an eventual-consistency bug the plan missed.** The
+   release-time label GC checked "any open issue still carrying this label?"
+   *immediately* after removing it — and GitHub's list index still counted the
+   just-released issue, so the orphaned label survived. Re-querying seconds
+   later returned 0. Fix: a shared `gc_label` helper — settle delay with one
+   retry (2s, then 3s), best-effort delete — used by both the release path and
+   the collision backoff (which also leaked its freshly created label). GC is
+   deliberately best-effort: under longer lag an orphaned label can survive
+   (harmless; `gh label delete` cleans it, and it prints a note when it
+   punts). The scouts' "board data is eventually consistent" warning was in
+   the plan's research — it just bit on a different query than predicted.
+   Postscript: the default-limit gotcha struck a *third* time during
+   verification — `gh label list` also truncates at 30, and this repo's label
+   list had just crossed it, hiding a surviving orphan. Every paginated `gh`
+   list command needs an explicit `--limit`.
 
 ### Level 4's deferred observations — settled on this run
 

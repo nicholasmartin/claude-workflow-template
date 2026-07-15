@@ -40,6 +40,26 @@ worktree_labels() {
     --jq '.labels[].name | select(startswith("worktree:"))'
 }
 
+# Delete a claim label's repo object if no open issue carries it anymore.
+# The list index lags label removal by a moment — without the settle delay
+# the just-released issue still counts and GC is skipped. Best-effort: a
+# lagging index or vanished label must never fail a claim/release.
+gc_label() {
+  local OPEN D
+  for D in 2 3; do
+    sleep "$D"
+    OPEN="$(gh issue list --repo nicholasmartin/claude-workflow-template --label "$1" --state open \
+      --json number --jq 'length')"
+    [ "$OPEN" -eq 0 ] && break
+  done
+  if [ "$OPEN" -eq 0 ]; then
+    gh label delete "$1" --repo nicholasmartin/claude-workflow-template --yes >/dev/null 2>&1 \
+      || echo "note: label $1 not deleted (in use or already gone)" >&2
+  else
+    echo "note: label $1 left in place (index still lists an open issue)" >&2
+  fi
+}
+
 case "$ACTION" in
   claim)
     NAME="${3:-$(detect_name)}"
@@ -53,6 +73,7 @@ case "$ACTION" in
     COUNT="$(printf '%s\n' "$CLAIMS" | grep -c '^worktree:' || true)"
     if [ "$COUNT" -gt 1 ]; then
       gh issue edit "$NUM" --repo nicholasmartin/claude-workflow-template --remove-label "$LABEL" >/dev/null
+      gc_label "$LABEL"
       OTHER="$(printf '%s\n' "$CLAIMS" | grep -vxF "$LABEL" | paste -sd' ' -)"
       echo "CLAIM COLLISION: issue #$NUM already claimed by $OTHER — pick different work." >&2
       exit 3
@@ -67,11 +88,7 @@ case "$ACTION" in
     fi
     while IFS= read -r L; do
       gh issue edit "$NUM" --repo nicholasmartin/claude-workflow-template --remove-label "$L" >/dev/null
-      OPEN="$(gh issue list --repo nicholasmartin/claude-workflow-template --label "$L" --state open \
-        --json number --jq 'length')"
-      if [ "$OPEN" -eq 0 ]; then
-        gh label delete "$L" --repo nicholasmartin/claude-workflow-template --yes >/dev/null
-      fi
+      gc_label "$L"
       echo "Released $L from #$NUM"
     done <<< "$CLAIMS"
     ;;
