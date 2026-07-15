@@ -1,0 +1,49 @@
+flowchart TD
+    subgraph ENTRY["Entry points (how work actually arrives)"]
+        E_ISSUE["Issue on board #18<br/>(via /plan-feature, auto-add<br/>automation, or filed manually)"]
+        E_CONT["/continue at session start<br/>board-state.sh injects board state,<br/>suggests next pick — only runs<br/>when YOU invoke it"]
+        E_ADHOC["No ticket at all<br/>you notice a typo or breakage<br/>and type the command directly"]
+        E_ISSUE --> E_CONT
+    end
+
+    E_CONT --> W
+    E_ADHOC --> W
+
+    W{"YOU route by ticket weight<br/>(human decision — nothing reads<br/>type: labels until Level 6's<br/>scheduled /dispatch)"}
+
+    W -->|"typo / dep bump / doc touch-up"| CH
+    W -->|"urgent prod breakage"| PH["/plan-hotfix (optional)<br/>broken → fix → ship<br/>plan ≤40 lines, no scouts"]
+    W -->|"reported bug"| PB["/plan-bug (optional)<br/>repro + logs → fix plan<br/>task 1 is ALWAYS the failing test"]
+    W -->|"single-domain feature"| PF["/plan-feature<br/>3 scouts + Integration Contracts<br/>+ NEW: recommends the executor"]
+
+    PH --> HF
+    PB --> BG
+    PF -->|"recommended: /execute"| EX
+    PF -->|"recommended: /execute-team<br/>(populated INTEGRATION CONTRACTS)"| ET
+
+    subgraph LIGHT["Light executors (no subagents by design)"]
+        CH["/chore — lightest<br/>no issue, no plan, no board<br/>single validation pass<br/>hands off: chore: commit"]
+        HF["/hotfix — speed-first<br/>issue optional; Status only,<br/>NEVER sets Phase<br/>hands off: fix: commit"]
+        BG["/bug — test-first<br/>issue body + comments as context<br/>RED repro required before any fix<br/>hands off: fix: commit"]
+    end
+
+    subgraph HEAVY["Heavy executors"]
+        EX["/execute — existing<br/>plan file + per-task verifiers<br/>+ verdict gate (Level 2)"]
+        ET["/execute-team — ported from nexus<br/>lead distributes contract slices<br/>to teammate agents with exclusive<br/>file ownership; contract diff +<br/>cross-review + e2e validation"]
+    end
+
+    ET -->|"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS<br/>not set → STOP with fallback"| EX
+
+    CH --> COMMIT["/commit<br/>(only /commit closes issues)"]
+    HF --> COMMIT
+    BG --> COMMIT
+    EX --> COMMIT
+    ET --> COMMIT
+
+    COMMIT -.-> GUARD["Level 1 hooks still guard EVERY variant:<br/>light variants shed ceremony<br/>(plans, issues, verifiers) —<br/>never the deterministic validation layer"]
+
+    CH -.->|"escalates if it reveals a real bug"| BG
+    HF -.->|"escalates if root cause unclear"| PB
+
+    FUTURE["Level 6 (future): cron-scheduled /dispatch<br/>reads board, classifies top Ready issue<br/>by type: label, routes to the right planner,<br/>drops a plan, STOPS for your review"]
+    FUTURE -.->|"replaces the human router"| W

@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph PLAN["/plan-feature — scout fan-out"]
+        P1["Board context + understand feature"] --> P2["Clarify ambiguities FIRST<br/>(before any scout spend)"]
+        P2 --> P3["Spawn 3 scouts in ONE message<br/>(concurrent, read-only by contract)"]
+        P3 --> S1["Scout: codebase patterns<br/>(Explore)"]
+        P3 --> S2["Scout: external research<br/>(general-purpose)"]
+        P3 --> S3["Scout: testing patterns<br/>(Explore)"]
+        S1 --> P4["Synthesis: cross-check reports,<br/>spot-check file:line claims"]
+        S2 --> P4
+        S3 --> P4
+        P4 --> P5["Plan file with new<br/>INTEGRATION CONTRACTS section<br/>(exact URLs, JSON shapes, error bodies —<br/>Level 3 /execute-team dependency)"]
+    end
+
+    subgraph EXEC["/execute — independent verification"]
+        E1["Implement task N"] --> E2["Task VALIDATE passes"]
+        E2 --> E3["Spawn verifier subagent (Explore):<br/>'don't trust the builder — read the artifacts'"]
+        E2 --> E4["Builder continues to task N+1<br/>(verifier runs in background)"]
+        E3 -->|"VERDICT: PASS"| E5["Verdict gate:<br/>every verdict must be PASS"]
+        E3 -->|"VERDICT: FAIL + evidence"| E6["Fix and re-verify"]
+        E6 --> E5
+        E4 --> E1
+        E5 --> E7["Final Validation"]
+        E7 --> E8["Final Observable-Truths verifier<br/>confirms every plan-level truth"]
+        E8 --> E9["Report: 'Ready for Commit'"]
+    end
+
+    PLAN -.->|"contract-rich plans feed"| EXEC

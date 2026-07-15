@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph TIER1["Tier 1 — Advisory (per edit)"]
+        A["Agent writes or edits a file"] --> B["Harness fires post-edit-lint.sh<br/>(PostToolUse hook)"]
+        B -->|"bash -n / eslint --cache fails"| C["stderr fed back to agent<br/>agent fixes immediately"]
+        B -->|clean| D["Silence — agent continues"]
+        C --> A
+    end
+
+    subgraph TIER2["Tier 2 — Blocking (per turn)"]
+        E["Agent decides it is done<br/>and tries to end the turn"] --> F["Harness fires stop-validate.sh<br/>(Stop hook)"]
+        F -->|"tsc / battery / sync-drift fails"| G["Turn CANNOT end<br/>stderr becomes fix instructions"]
+        G --> E
+        F -->|green| H["Turn ends"]
+    end
+
+    subgraph TIER3["Tier 3 — Warn (per commit)"]
+        I["/commit"] --> J["pre-commit-scan.sh<br/>TODO / FIXME / empty catch /<br/>empty fn / .only / .skip"]
+        J -->|findings| K["Agent relays warning<br/>YOU decide — never blocks"]
+        J -->|clean| L["Commit proceeds"]
+        K --> L
+    end
+
+    subgraph SCRIPTS["Plumbing scripts (replaced gh choreography)"]
+        M["board-state.sh<br/>one JSON blob, injected before<br/>the agent thinks (/continue, /status)"]
+        N["move-issue.sh<br/>replaces 3-step field-ID dance"]
+        O["create-issue.sh<br/>issue + labels + board + epic link<br/>in one call"]
+    end
+
+    TIER1 -.->|"agent judgment unchanged —<br/>harness now enforces conditions"| TIER2
+    TIER2 -.-> TIER3
