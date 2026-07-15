@@ -190,7 +190,7 @@ Chapter 9: The Software Factory
 23:3223 minutes, 32 secondsdeveloper workflows. Okay. So at the highest levels of agentic engineering, you're building software factories that execute the right work and the right
 23:4123 minutes, 41 secondscombination of engineers, agents, and code across your organization. Once you really start to scale it up, you're going to add your other teammates,
 23:4923 minutes, 49 secondsright? Your other team members from other cross cutting concerns inside of your business. But at the core of it, the engineers are responsible for the
-23:5623 minutes, 56 secondscode. Okay? I think a lot of orgs are going to have a a problem with this once they start scaling in and adding other team members, right? Especially ones
+23:5623 minutes, 56 secondscode. Okay? I think a lot of orgs are going to have a problem with this once they start scaling in and adding other team members, right? Especially ones
 24:0424 minutes, 4 secondsthat can't write clear tickets for the life of them. You've seen this a million times, right? It's the most painful thing when your product manager, your
 24:1124 minutes, 11 secondsyour CTO, your your tech lead [laughter] just writes a ticket and you have to translate it, right? So there's there's a lot of like, you know, people
 24:1924 minutes, 19 secondsorganizational level work to be done here. But you at the end of the day, you know, you the engineer plus the agents plus the code making up the AI developer workflow. This is what it's all about.
