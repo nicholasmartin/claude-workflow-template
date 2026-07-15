@@ -21,6 +21,7 @@ If the argument is (or references) an existing GitHub issue:
 
 - Read the issue body: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
 
 **Status only — a hotfix never sets the Phase field.** (The script above only touches Status; never pass a phase anywhere.)
 

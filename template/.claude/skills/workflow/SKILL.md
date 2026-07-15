@@ -84,7 +84,7 @@ Map the change against all components. Check each box for components that need u
 - [ ] `CLAUDE.md` (project rules)
 - [ ] `.claude/settings.json` (hook wiring)
 - [ ] `.claude/hooks/*.sh` (validation hook scripts)
-- [ ] `.claude/scripts/*.sh` (board plumbing: board-state, move-issue, create-issue)
+- [ ] `.claude/scripts/*.sh` (board plumbing: board-state, move-issue, create-issue, claim-issue)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)
 - [ ] GitHub Project automations (must be done in UI)
@@ -158,5 +158,6 @@ After implementing:
 - **Never change a scout or verifier prompt spec in a command without updating workflow.md § Subagent Layer** in the same change
 - **Never add a GitHub field without documenting it** in workflow.md section 2
 - **Never change label taxonomy without updating** workflow.md section 4
+- **Never change the claim convention (claim-issue.sh, worktree: labels) without updating workflow.md section 10, Coordination Layer** in the same change
 - **Test command syntax** by reading the updated command file and verifying `gh` commands reference valid field/option IDs
 - **Note UI-only changes** clearly, since views and automations can't be configured via API

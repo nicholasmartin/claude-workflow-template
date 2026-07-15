@@ -47,6 +47,11 @@ verbatim from what you read in this step before executing anything.
 - Ask the user which GitHub issue this plan implements (if not obvious from the plan)
 - Read the issue body: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
+- Claim the issue for this run's worktree: `./.claude/scripts/claim-issue.sh <NUMBER> claim <slug>`
+  — the same plan-filename slug Step 4 passes to `EnterWorktree`. On `CLAIM
+  COLLISION` (exit 3), STOP and tell the user which worktree owns the issue.
+  Re-entering a resumed worktree re-claims idempotently (re-adding an
+  already-present label is a no-op).
 
 **Never close issues or move them to Done here — only `/commit` closes issues.**
 
@@ -109,17 +114,22 @@ git worktree remove .claude/worktrees/<name>
 git branch -d <worktree-branch>
 ```
 
+4. Release the ownership claim: `./.claude/scripts/claim-issue.sh <NUMBER> release`
+   (if `/commit` closed the issue it already released — release is then a no-op).
+
 ## Rollback: abandoning a run
 
 To abandon a run, call `ExitWorktree` with `action: "remove"`. If it refuses
 because of uncommitted or unmerged work, confirm with the user before retrying
-with `discard_changes: true`. The main tree is untouched either way.
+with `discard_changes: true`. The main tree is untouched either way. Then
+release the abandoned claim: `./.claude/scripts/claim-issue.sh <NUMBER> release`.
 
 ## Notes
 
 - Parallel usage: N terminals × N worktrees — each terminal runs its own
-  `/execute-isolated <plan>`; the GitHub board is the shared state. Coordination
-  conventions (worktree ownership labels) arrive in Level 5.
+  `/execute-isolated <plan>`; the GitHub board is the shared state. Session
+  ownership is the `worktree:<name>` claim label managed by `claim-issue.sh`
+  (Step 3/7); `/continue` respects claims — see workflow.md §10 Coordination Layer.
 - `ExitWorktree` never merges anything — merge-back is always the explicit Step 7.
 - Gitignored files (`.env`, `.claude/settings.local.json`) are absent in
   worktrees. If the project needs them, add a `.worktreeinclude` file (gitignore

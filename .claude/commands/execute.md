@@ -16,6 +16,7 @@ Read plan file: `$ARGUMENTS`
 - Ask the user which GitHub issue this plan implements (if not obvious from the plan)
 - Read the issue body: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
 
 ### 1. Pre-flight Checks
 

@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph blackboard["GitHub — the shared blackboard (gh always hits the remote)"]
+        board[("Project board #18\nStatus / Phase / Priority")]
+        issues[("Issues\n+ worktree:&lt;name&gt; claim labels")]
+    end
+
+    subgraph t1["Terminal 1 — worktree plan-a"]
+        e1["/execute-isolated plan-a.md"]
+    end
+    subgraph t2["Terminal 2 — main checkout"]
+        c2["/continue"]
+    end
+    subgraph t3["Terminal 3 — worktree hotfix-67"]
+        h3["/hotfix 67"]
+    end
+
+    e1 -- "1· move-issue → In Progress\n2· claim-issue #42 claim plan-a" --> issues
+    h3 -- "claim-issue #67 claim hotfix-67" --> issues
+    c2 -- "board-state.sh\n(labels ride along, zero extra calls)" --> board
+    issues -. "labels visible in snapshot" .-> board
+    c2 -- "sees #42 → worktree:plan-a (not mine) → SKIP\nsees #67 → worktree:hotfix-67 → SKIP\npicks unclaimed #71" --> c2
+
+    e1 -- "/commit closes #42:\nStatus → Done · claim released · label GC" --> issues
+
+    subgraph rules["claim-issue.sh guarantees"]
+        r1["no CAS on GitHub →\nre-read after write;\nlater writer backs off (exit 3)"]
+        r2["stale = worktree absent from\ngit worktree list ∧ not main →\nflagged, cleared only with consent"]
+    end
+    issues --- rules

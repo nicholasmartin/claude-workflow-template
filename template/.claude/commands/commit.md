@@ -68,6 +68,7 @@ After committing, check if the work completed relates to any open GitHub issues:
    - If the issue has acceptance criteria checkboxes and any are now satisfied, update the issue body to check them off
    - If ALL acceptance criteria are complete, close the issue: `gh issue close <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --comment "All acceptance criteria met in <commit-hash>."`
    - **After every close, set the board Status yourself:** `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT move its board item. The "item closed → Done" automation is optional UI configuration that may not be enabled; never rely on it. This applies to feature issues and task sub-issues alike.
+   - **After every close, release the ownership claim:** `./.claude/scripts/claim-issue.sh <NUMBER> release` — removes any `worktree:*` label (no-op if unclaimed). Applies to feature issues and task sub-issues alike.
    - **Task sub-issues:** When closing a feature issue, check if it has task sub-issues:
      ```bash
      gh api graphql -f query='query { repository(owner: "{{REPO_OWNER}}", name: "{{REPO_NAME}}") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state } } } } }'

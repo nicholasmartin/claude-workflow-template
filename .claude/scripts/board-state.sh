@@ -10,6 +10,6 @@ set -euo pipefail
 
 ISSUES="$(gh issue list --repo nicholasmartin/claude-workflow-template --state open --json number,title,labels,state --limit 50)"
 CLOSED="$(gh issue list --repo nicholasmartin/claude-workflow-template --state closed --json number,title,closedAt --limit 10)"
-BOARD="$(gh project item-list 18 --owner @me --format json)"
+BOARD="$(gh project item-list 18 --owner @me --format json --limit 200)"
 
 printf '{"issues":%s,"closed":%s,"board":%s}\n' "$ISSUES" "$CLOSED" "$BOARD"
