@@ -1,9 +1,9 @@
 # PRD: Agentic Evolution of the Claude Workflow Template
 
-**Version:** 1.0
-**Date:** 2026-07-14
-**Status:** Draft — pending review
-**Sources:** `AGENTIC-EVOLUTION.md`, IndyDevDan "Forget Loop Engineering" transcript (`transcription.md`), Level 1 design discussion (2026-07-14)
+**Version:** 1.1
+**Date:** 2026-07-17
+**Status:** Active — amended at Level 5 close (Level 6 re-cut to ship layer, triage → Level 7; see §15 decisions log)
+**Sources:** `AGENTIC-EVOLUTION.md`, IndyDevDan "Forget Loop Engineering" transcript (`transcription.md`), Level 1 design discussion (2026-07-14), ship-layer design discussion (2026-07-17)
 
 ---
 
@@ -11,7 +11,7 @@
 
 The claude-workflow-template today is a **Level 0** system: a set of slash commands (`/plan-feature`, `/execute`, `/commit`, `/continue`) that one engineer drives sequentially through one Claude Code session, with GitHub Issues/Projects as the tracking layer. It works, but every deterministic check runs only if the agent remembers to run it, every phase blocks on a single agent's context, and every ticket gets the same heavyweight treatment.
 
-This project evolves the template through **six levels** toward IndyDevDan's "AI Developer Workflow" model — composing the three actors of value creation (engineers at the ends, agents in the middle, deterministic code as the glue) — while staying entirely on the Claude Code subscription using native primitives: hooks, subagents, worktrees, and scheduled sessions. No Agent SDK, no API bill.
+This project evolves the template through **seven levels** toward IndyDevDan's "AI Developer Workflow" model — composing the three actors of value creation (engineers at the ends, agents in the middle, deterministic code as the glue) — while staying entirely on the Claude Code subscription using native primitives: hooks, subagents, worktrees, and scheduled sessions. No Agent SDK, no API bill.
 
 The repo is its own first customer: every improvement is built in `template/` (the product), synced to the root installation (the dogfood), and used to manage the next level's work. **The MVP goal:** a solo developer reviews an auto-prepared plan, hits `/execute`, and the workflow ships validated work — while they're already reviewing the next plan in another terminal.
 
@@ -53,7 +53,8 @@ Turn the workflow template into a system that builds the system — one level at
 - [ ] Level 3: Weight-matched command variants (`/hotfix`, `/chore`, `/bug`, `/plan-bug`, `/plan-hotfix`) plus `/execute-team` ported from nexus as the heavy-end executor
 - [ ] Level 4: Worktree isolation (`/execute-isolated`)
 - [ ] Level 5: Multi-session coordination conventions (GitHub board as shared blackboard, worktree ownership labels)
-- [ ] Level 6: Automated triage (`/dispatch` + scheduled session that preps plans for review)
+- [ ] Level 6: Ship layer — `/merge` and `/pr` as explicit ship-time endings for branch work; `/execute-isolated` stops at the commit seam; `/commit` closes issues only on the default branch; `/continue` reconciles merged PRs
+- [ ] Level 7: Automated triage (`/dispatch` + scheduled session that preps plans for review)
 
 **Learning System (cross-cutting)**
 - [ ] `.agents/learnings/level-N.md` written at the end of every level (what changed, why, before/after, how to observe it)
@@ -102,10 +103,13 @@ Turn the workflow template into a system that builds the system — one level at
 6. **As the owner, I want two features progressing in parallel without file conflicts,** so that my throughput isn't bounded by one working tree.
    *Example: `/execute-isolated plan-A.md` in terminal 1, `/hotfix` on issue #67 in terminal 2, each in its own worktree, board keeps them coordinated.*
 
-7. **As the owner, I want a scheduled session to triage the board and prep the next plan,** so that my morning starts at the review constraint, not the research phase.
+7. **As the owner, I want to choose merge-or-PR at ship time, per branch,** so that the same workflow serves my solo repos and the client repos where I can't merge PRs — with no install-time mode deciding for me.
+   *Example: `/execute-isolated` finishes on the branch; I run `/merge` when the next task needs this work under it, or `/pr` when the repo requires review — and if the PR sits unmerged, I stack the next branch on top inside the same worktree.*
+
+8. **As the owner, I want a scheduled session to triage the board and prep the next plan,** so that my morning starts at the review constraint, not the research phase.
    *Example: overnight `/dispatch` picks the top Ready issue, routes to the right planner, drops a plan file, and stops for my approval.*
 
-8. **As a template user, I want everything to work on my stack or get out of the way,** so that adopting the template never breaks my project.
+9. **As a template user, I want everything to work on my stack or get out of the way,** so that adopting the template never breaks my project.
    *Example: hooks in a Python repo detect no eslint/tsc and exit 0 silently.*
 
 ---
@@ -160,7 +164,7 @@ For every instruction in a command file: **does it tell the agent how to think, 
 └── AGENTIC-EVOLUTION.md       # the conceptual roadmap
 ```
 
-### The Level Lifecycle (repeats 6 times)
+### The Level Lifecycle (repeats 7 times)
 
 ```
 /plan-feature "Level N: <title>"          → plan file + GitHub epic (Phase N)
@@ -217,7 +221,23 @@ The full executor spectrum, light to heavy — workflow weight matches ticket we
 
 - Convention only: board = shared blackboard; `worktree:<name>` labels/comments mark session ownership; `/continue` respects in-progress claims
 
-### Level 6 — Automated Triage
+### Level 6 — Ship Layer (`/merge` + `/pr`)
+
+> Re-cut 2026-07-15 (was: automated triage → now Level 7); design finalized 2026-07-17.
+> **No `SHIP_FLOW` flag** — an earlier sketch put a merge|pr mode in workflow.env; rejected.
+> Landing is a **ship-time choice per branch**, made at the seam *"work committed on a
+> branch" → "work lands on the default branch."* Governing invariant: **an issue closes
+> only when its work reaches the default branch.**
+
+- `/execute-isolated` **stops at the seam**: ends after `/commit` on the worktree branch — branch + worktree kept, issue open, claim held; reports the two endings. Auto merge/cleanup (old Step 7) is removed
+- `/commit` closes issues **only on the default branch**. On a feature branch: commit, comment progress, check off AC, never close — point at `/merge`/`/pr`. Unchanged on master. Optional `--close` escape hatch
+- **`/merge` (new) — local ending**, for "the next task needs this work under it": safety checks (clean main tree, merges serialized across sessions), **branch-protection guard** (protected default branch → stop, redirect to `/pr` before anything happens), `git merge --no-ff`, close issue + board → Done + release claim, push. Branch/worktree deletion is an **explicit final step, never a side effect** (default keep; `/continue` GCs fully-merged branches)
+- **`/pr` — remote ending**, ported from `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`: push branch, open PR (**never merges**, consent-only rebase, `--reviewer`, `--draft`), `Closes #<issue>` fires on merge, board → **In Review** (new Status option). Branch + worktree stay alive for review feedback
+- `/continue` **reconciles merged PRs**: pull master, board → Done, release claim, offer branch/worktree cleanup (`git branch -D` — squash-merge defeats git's own merged check; the PR's merged state is the source of truth). **Stack-aware**: never delete a branch with local descendants — offer `git rebase --onto origin/<default> <A> <B>` instead
+- **Stacking documented as a pattern, not machinery**: continue on top of PR'd-but-unmerged work via `git checkout -b` inside the same worktree (worktree-per-stack); one `--onto` rebase after each upstream squash-merge
+- Ripple: board gains "In Review" Status option (and a Phase 7 option); `workflow.md` §ship-layer; `/init-project` label/status setup updated
+
+### Level 7 — Automated Triage
 
 - `/dispatch`: reads board, classifies top Ready issue by `type:` label, routes to the matching planner, drops plan file, **stops for review**
 - Scheduled session (CronCreate / `schedule` skill) runs `/dispatch` each morning
@@ -284,8 +304,11 @@ Not applicable — no service endpoints. The "API" of this product is its comman
 - [ ] A chore ships with ≤25% of the tool calls a feature requires (L3)
 - [ ] A multi-component feature builds via agent team from a contract-rich plan, with zero integration mismatches at contract-diff time (L3)
 - [ ] Two plans execute simultaneously with zero file conflicts (L4–5)
-- [ ] A scheduled session preps a reviewable plan with no human at the keyboard (L6)
-- [ ] All 6 learning docs exist and each level has a logged sign-off (cross-cutting)
+- [ ] `/commit` on a feature branch never closes an issue; the issue closes at `/merge` or PR merge, after the work is on the default branch (L6)
+- [ ] `/merge` on a repo with a protected default branch stops and redirects to `/pr` before merging anything (L6)
+- [ ] A branch with a local descendant survives PR-merge reconciliation; `/continue` offers the stack rebase instead of deleting it (L6)
+- [ ] A scheduled session preps a reviewable plan with no human at the keyboard (L7)
+- [ ] All 7 learning docs exist and each level has a logged sign-off (cross-cutting)
 
 **Quality indicators**
 - [ ] Hooks add <500ms p95 to edit operations; zero cost on non-code files
@@ -306,7 +329,12 @@ Not applicable — no service endpoints. The "API" of this product is its comman
 | **3 — Variants** | Weight-matched workflows, light to heavy | `/hotfix`, `/chore`, `/bug`, `/plan-bug`, `/plan-hotfix`; `/execute-team` ported from nexus | Real chore + real bug shipped through the new paths; one multi-component feature built by an agent team from a contract-rich plan | 2–3 sessions |
 | **4 — Isolation** | Parallelism without conflicts | `/execute-isolated` (EnterWorktree wrapper) | Two plans executed in parallel worktrees, clean merges | 1 session |
 | **5 — Coordination** | Board as shared blackboard | `worktree:` ownership convention, `/continue` awareness | 2–3 terminal live test on real issues | 1 session |
-| **6 — Triage** | Ticket → reviewable plan, unattended | `/dispatch`, scheduled morning session | Overnight run produces a correct, reviewable plan for a seeded issue | 1–2 sessions |
+| **6 — Ship layer** | Landing becomes a ship-time choice | `/merge` (new), `/pr` (ported), `/execute-isolated` stops at the seam, `/commit` default-branch-only close, `/continue` reconcile, "In Review" Status | Real branch shipped both ways: `/merge` locally on this repo; `/pr` + stacked follow-up branch + post-squash reconcile on a PR-gated repo (or simulated via branch protection here) | 1–2 sessions |
+| **7 — Triage** | Ticket → reviewable plan, unattended | `/dispatch`, scheduled morning session | Overnight run produces a correct, reviewable plan for a seeded issue | 1–2 sessions |
+
+> Board note: Phase options on board #18 currently go to Phase 6 (`c9c4e3db`). Level 7 work
+> requires adding a "Phase 7" option (via `updateProjectV2Field`) and appending it to
+> `PHASE_OPTIONS` in `scripts/workflow.env` — fold this into Level 6's ripple or Level 7's setup.
 
 ---
 
@@ -331,6 +359,7 @@ Not applicable — no service endpoints. The "API" of this product is its comman
 | **Claude Code primitive changes** (hooks API, EnterWorktree, scheduling) | Levels built on shifting sand | Hooks/scripts are thin wrappers; primitive-specific logic isolated per file; learning docs record the assumptions |
 | **Agent teams are experimental** (`/execute-team` depends on an env-flagged feature that may change or regress) | Level 3's heavy executor breaks for template users | `/execute-team` documents fallback to `/execute`; feature-flag check up front with a clear message; light variants carry the level if teams are unavailable |
 | **Learning steps decay into rubber stamps** | Owner loses the thread by Level 4; automation without understanding | Walkthrough requires live demonstration, not just reading; sign-off is an explicit logged act on the epic |
+| **Ship-layer footguns** (merge pushed to an unprotected team repo bypassing review; reconcile deletes a branch a stack depends on; squash-merge defeats `branch -d`) | Work lands unreviewed, or local stacked work is stranded | `/merge` branch-protection guard; reconcile is stack-aware (descendant check before delete); PR merged-state, not git ancestry, is the deletion authority; keep-until-GC deletion default |
 
 ---
 
@@ -345,8 +374,13 @@ Not applicable — no service endpoints. The "API" of this product is its comman
 **Key decisions log (2026-07-14)**
 1. Learning step = doc + live walkthrough (not doc-only)
 2. Learning step is a **hard gate** between levels
-3. Phases map strictly 1:1 to Levels 1–6 (no re-cut)
+3. Phases map strictly 1:1 to Levels 1–6 (no re-cut) — *superseded by decision 8*
 4. Level 6 is committed scope, not aspirational
 5. Learning docs live in `.agents/learnings/` (repo-only, not shipped in template)
 6. Script extractions are Level 1 scope but a separate commit from hooks
 7. `/execute-team` (exists in nexus only, never ported here) joins Level 3 as the heavy-end executor variant; its Integration Contracts plan-section dependency lands in Level 2's `/plan-feature` refactor (decided 2026-07-14)
+
+**Amendments (2026-07-15 / 2026-07-17)**
+8. **Roadmap re-cut at Level 5 close (2026-07-15):** Level 6 = ship layer (PR handoff); automated triage moves to Level 7. Driven by consultation work on multi-dev repos. Supersedes decision 3's "no re-cut."
+9. **No `SHIP_FLOW` flag (2026-07-17):** the merge|pr workflow.env mode from the original re-cut sketch is rejected — landing is a per-branch, ship-time choice (`/merge` vs `/pr` from the branch the work sits on), inferred from nothing, configured nowhere. `/commit` closes issues only on the default branch (invariant: an issue closes only when its work reaches the default branch).
+10. **`/execute-isolated` ends at the commit seam (2026-07-17):** its auto merge/remove/delete tail moves into `/merge`; branch/worktree deletion becomes an explicit act (default keep, `/continue` GC), never a side effect.

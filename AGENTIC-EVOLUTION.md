@@ -166,19 +166,68 @@ GitHub Issues + Projects = the shared blackboard (already have this). `/continue
 
 ---
 
-> **⚠️ ROADMAP RE-CUT (owner decision, 2026-07-15 — amendment pending):**
-> **Level 6 is now the PR-handoff ship layer**, and the automated triage below
-> **moves to Level 7.** Driven by consultation work on multi-dev repos: the
-> handoff is "push branch → open PR → reviewer assigned → someone else merges."
-> Design agreed at Level 5 close: `SHIP_FLOW=merge|pr` in workflow.env; `/pr`
-> command ported from `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`
-> (never-merges contract, consent-only rebase, `--reviewer`); `/commit` stops
-> closing issues in pr mode (`Closes #N` fires on merge); new "In Review" board
-> Status; `/continue` reconciles merged-PR issues (board Done + claim release).
-> **First step of any Level 6 work: rewrite this section and PRD §7/§12 to
-> match, then `/plan-feature level 6`. Do not plan from the section below as-is.**
+### Level 6 — The ship layer: `/merge` and `/pr`
 
-### Level 6 — Automated triage (aspirational)
+> Re-cut from "automated triage" on 2026-07-15 (triage is now Level 7); ship-flow
+> design finalized 2026-07-17. Driven by consultation work on multi-dev repos,
+> where the handoff is "push branch → open PR → reviewer assigned → someone else
+> merges."
+
+Levels 4–5 end awkwardly: `/execute-isolated` auto-merges the worktree branch
+into master and deletes it in the same breath, and `/commit` closes the issue
+while the work exists only on the branch. Tolerable solo; wrong the moment a
+repo requires PRs — and either way the *system* decides when work lands instead
+of the engineer.
+
+**Design principle (owner decision, 2026-07-17): landing is a ship-time choice,
+not an install-time mode.** There is no `SHIP_FLOW` flag (an earlier sketch had
+one in workflow.env — rejected as too rigid: it can't know what the *next* task
+needs). The natural seam is **"work committed on a branch" → "work lands on the
+default branch."** Every isolated run stops at that seam; the engineer picks one
+of two endings per branch.
+
+**Concrete moves:**
+
+- **`/execute-isolated` gets shorter, not smarter.** It now ends after `/commit`
+  on the worktree branch: branch and worktree kept, issue open, claim held. It
+  reports that state and the two endings. All merge/cleanup choreography moves out.
+- **`/commit` closes issues only on the default branch.** On master: unchanged.
+  On any other branch: commit, comment progress, check off AC — but never close.
+  The close belongs to whatever lands the work (the invariant: *an issue closes
+  only when its work reaches the default branch*).
+- **New `/merge` — the local ending.** For "I need this under my feet for the
+  next task." Safety checks (clean main tree, serialized against other sessions'
+  merges), a **branch-protection guard** (`gh api .../branches/<default>/protection`
+  — protected → stop and point at `/pr` *before* anything happens), then
+  `git merge --no-ff`, closure bookkeeping (close issue, board → Done, release
+  claim), push. Branch/worktree **deletion is an explicit final step, never a
+  side effect** — default keep; `/continue` offers GC of fully-merged branches.
+- **`/pr` — the remote ending.** Ported from
+  `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`: push the branch,
+  open the PR (never merges, consent-only rebase, `--reviewer`, `--draft`),
+  `Closes #<issue>` so the issue closes on merge, board → **In Review** (new
+  Status option). Branch and worktree stay alive for review feedback.
+- **`/continue` learns to reconcile.** Detects merged PRs: pulls master, board →
+  Done, releases claim, offers branch/worktree cleanup (`git branch -D` — after a
+  squash-merge git can't verify the merge; the PR's merged state is the source of
+  truth). **Stack-aware:** never deletes a branch with local descendants —
+  instead offers the `git rebase --onto origin/<default> <A> <B>` that moves the
+  stack down.
+- **Stacking is a documented pattern, not machinery.** To keep building on
+  PR'd-but-unmerged work: `git checkout -b` the next branch inside the *same*
+  worktree (worktree-per-stack — worktrees isolate parallel work; a stack is
+  sequential). After the PR squash-merges upstream, one `--onto` rebase.
+
+**Effort:** one new command (`/merge`), one port (`/pr`), one trim
+(`/execute-isolated`), one rule change (`/commit`), one reconcile step
+(`/continue`), one board Status option (In Review).
+**Impact:** the same workflow ships solo repos (merge, keep moving) and PR-gated
+team repos (PR, stack on top, reconcile later) — chosen per branch, at the moment
+the answer is actually knowable.
+
+---
+
+### Level 7 — Automated triage (aspirational)
 
 Dan's **factory router agent**. With **scheduled agents** (`CronCreate` / the `schedule` skill) you can:
 
@@ -202,7 +251,7 @@ If you do one thing, do **Level 1 + the parallel scout half of Level 2**. Betwee
 - Kill the tightest wasteful loop (manual "did lint pass?" checks) with deterministic hooks
 - Get your first taste of Dan's scale-compute-to-scale-impact by parallelizing the research phase of `/plan-feature`
 
-Both fit inside the existing framework — no restructuring, no new mental model. Then Levels 3-6 become natural extensions instead of a rewrite.
+Both fit inside the existing framework — no restructuring, no new mental model. Then Levels 3-7 become natural extensions instead of a rewrite.
 
 ---
 
@@ -224,7 +273,7 @@ Same idea, different substrate. You still get the 3-actor composition (engineer 
 | Dan's factory node | Your Claude Code primitive |
 |---|---|
 | Kanban queue | GitHub Projects board |
-| Factory router agent | `/dispatch` (Level 6) or you reading `/continue` |
+| Factory router agent | `/dispatch` (Level 7) or you reading `/continue` |
 | Scout agent | `Agent` tool with `subagent_type: Explore` |
 | Plan agent | `/plan-feature` (single-agent today, subagent-orchestrated at Level 2) |
 | Build agent | `/execute` (or `/hotfix`, `/bug`, `/chore` at Level 3) |
@@ -232,7 +281,7 @@ Same idea, different substrate. You still get the 3-actor composition (engineer 
 | Agent sandbox | Worktree via `EnterWorktree` (Level 4) |
 | Multiple sandboxes running in parallel | Multiple Claude Code terminals, one per worktree (Level 5) |
 | Code between agents | Hooks + bash inside command files (Level 1) |
-| Ship node | `/commit` |
+| Ship node | `/commit` on master; `/merge` or `/pr` from a branch (Level 6) |
 | Engineer review | You, always, at plan approval and commit |
 
 ---

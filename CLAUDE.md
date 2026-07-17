@@ -72,7 +72,7 @@ There is no build, no package.json, no test framework — validation is structur
 ├── scripts/
 │   ├── sync-template.sh # template -> root sync with placeholder fill
 │   └── workflow.env     # this repo's captured IDs (board #18, field IDs)
-├── AGENTIC-EVOLUTION.md # the roadmap: Level 1-6 ladder toward ADWs
+├── AGENTIC-EVOLUTION.md # the roadmap: Level 1-7 ladder toward ADWs
 └── transcription.md     # source material (IndyDevDan ADW transcript)
 ```
 
@@ -129,7 +129,7 @@ Field IDs live in `.claude/workflow.md` (Field IDs Reference) and `scripts/workf
 
 | File | Purpose |
 |------|---------|
-| `AGENTIC-EVOLUTION.md` | The roadmap this repo is executing (Levels 1-6) |
+| `AGENTIC-EVOLUTION.md` | The roadmap this repo is executing (Levels 1-7) |
 | `template/.claude/workflow.md` | Source of truth for the workflow system design |
 | `template/.claude/skills/workflow/SKILL.md` | Meta-skill: how to change the system consistently |
 | `scripts/sync-template.sh` | The template → installation sync (run after template edits) |
@@ -139,13 +139,14 @@ Field IDs live in `.claude/workflow.md` (Field IDs Reference) and `scripts/workf
 ## Notes
 
 - **⚠️ NEXT SESSION — read before any Level 6/7 work:** Levels 1–5 are complete
-  and signed off (epic #29 closed 2026-07-15). The roadmap was **re-cut at Level 5
-  close**: **Level 6 = PR-handoff ship layer** (port `/pr` from
-  `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`), **automated
-  triage moves to Level 7**. The roadmap docs are NOT yet amended — the **first
-  step** is to rewrite `AGENTIC-EVOLUTION.md` Level 6 (see the RE-CUT banner
-  there for the agreed design) and `.claude/PRD.md` §7/§12, **then**
-  `/plan-feature level 6`.
+  and signed off (epic #29 closed 2026-07-15). **Level 6 = ship layer** (`/merge`
+  new + `/pr` ported from `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`);
+  **automated triage is Level 7**. The roadmap docs WERE amended 2026-07-17
+  (`AGENTIC-EVOLUTION.md` Level 6/7, `.claude/PRD.md` v1.1 — see §15 decisions
+  8–10): **no `SHIP_FLOW` flag** — landing is a per-branch ship-time choice;
+  `/execute-isolated` ends at the commit seam; `/commit` closes issues only on
+  the default branch. **Next step: `/plan-feature level 6`** from those amended
+  docs.
 
 - When a change touches the workflow system itself (commands, board schema, labels), use the `workflow` skill — it enforces updating all related pieces together.
 - The `workflow` skill's guardrail applies doubly here: never update a command without updating `workflow.md`, and never update either without re-running the sync.
