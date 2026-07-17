@@ -1,7 +1,7 @@
 # Level 6: The Ship Layer (`/merge` + `/pr`) — What Changed and Why
 
-**Status:** implemented; walkthrough + sign-off pending (HARD GATE for Level 7)
-**Commits:** (added at /commit)
+**Status:** shipped; owner signed off 2026-07-17 (abbreviated gate — see walkthrough log)
+**Commits:** `1fae119` (roadmap amendment), `c499a4d` (implementation)
 **Diagram:** `level-6-diagram.mmd` (paste into mermaid.live)
 
 ## The gap this closes
@@ -177,7 +177,32 @@ AFTER (Level 6):
   Display-order only; drag it in the UI if it bothers you — never reorder via
   API on a populated board.
 
-## Walkthrough log — appended live during the session
+## Walkthrough log (2026-07-17 — abbreviated gate, owner sign-off without the full live script)
 
-*(pending — steps recorded here with ✓ as demonstrated; owner sign-off
-recorded as a comment on epic #34)*
+The owner signed off on the strength of the build's live proofs plus this doc,
+without running the 7-step script. Recorded per the level-4 honesty
+convention — live-proven and spec-verified are distinguished below, not blurred.
+
+**Proven live during the build:**
+1. `add-field-option.sh Phase "Phase 7"` minted `07b5f671` on board #18 ✓
+2. Idempotency re-run: same id, exit 0, no mutation; Phase read-back 7 options,
+   original 6 ids intact, 37 items kept their Phase ✓
+3. Status read-back: 5 options, original 4 ids intact, 39 items kept Status ✓
+4. `move-issue.sh 34 "In Review"` → `34 "In Progress"` round-trip ✓
+5. Sync + full battery green; 18 commands; zero placeholder leaks ✓
+6. This session's own `/commit` ran under the new closing gate on master and
+   correctly closed #35–#38 (gate-open path exercised for real) ✓
+
+**Spec-verified only (10 task verifiers + Observable-Truths verifier PASS),
+not demonstrated live:** the `/execute-isolated` seam ending; a real `/merge`
+landing; a real `/pr` + squash-merge + `/continue` reconcile; stack protection
+(the `--onto` offer); the protection-guard redirect.
+
+**Deferred validations — log the outcome here (or in the Level 7 doc) at the
+first real occasion:**
+1. First `/merge` of a real branch (watch: close-after-landing order, keep-by-default prompt)
+2. First `/pr` on a PR-gated repo + post-merge `/continue` reconcile (watch: board In Review → Done, claim release, `-D` consent)
+3. First stacked-branch reconcile (watch: descendant protected, filled-in `--onto` command offered)
+
+**Sign-off:** owner, 2026-07-17 — recorded as a comment on epic #34. Gate
+closed; Level 7 planning unblocked.

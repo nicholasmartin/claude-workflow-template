@@ -138,15 +138,16 @@ Field IDs live in `.claude/workflow.md` (Field IDs Reference) and `scripts/workf
 
 ## Notes
 
-- **⚠️ NEXT SESSION — read before any Level 6/7 work:** Levels 1–5 are complete
-  and signed off (epic #29 closed 2026-07-15). **Level 6 = ship layer** (`/merge`
-  new + `/pr` ported from `~/projects/digi-tal/claude-workflow/.claude/commands/pr.md`);
-  **automated triage is Level 7**. The roadmap docs WERE amended 2026-07-17
-  (`AGENTIC-EVOLUTION.md` Level 6/7, `.claude/PRD.md` v1.1 — see §15 decisions
-  8–10): **no `SHIP_FLOW` flag** — landing is a per-branch ship-time choice;
-  `/execute-isolated` ends at the commit seam; `/commit` closes issues only on
-  the default branch. **Next step: `/plan-feature level 6`** from those amended
-  docs.
+- **⚠️ NEXT SESSION:** Levels 1–6 are complete and signed off (Level 6 epic #34
+  closed 2026-07-17; implementation `c499a4d`). The ship layer is live: `/merge`
+  + `/pr` are the two per-branch ship endings; `/commit` closes issues only on
+  the default branch (invariant: close ⟺ work reached the default branch);
+  `/execute-isolated` ends at the commit seam; `/continue` reconciles merged
+  PRs stack-aware. **Three deferred live validations** (first real `/merge`,
+  first `/pr`+reconcile, first stack reconcile) are tracked in
+  `.agents/learnings/level-6.md` — log outcomes there when they occur.
+  **Next: `/plan-feature level 7`** (automated triage — `/dispatch` + scheduled
+  session; AGENTIC-EVOLUTION.md Level 7 + PRD §7 are already current).
 
 - When a change touches the workflow system itself (commands, board schema, labels), use the `workflow` skill — it enforces updating all related pieces together.
 - The `workflow` skill's guardrail applies doubly here: never update a command without updating `workflow.md`, and never update either without re-running the sync.
