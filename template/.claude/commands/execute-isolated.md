@@ -53,7 +53,8 @@ verbatim from what you read in this step before executing anything.
   Re-entering a resumed worktree re-claims idempotently (re-adding an
   already-present label is a no-op).
 
-**Never close issues or move them to Done here — only `/commit` closes issues.**
+**Never close issues or move them to Done here — closing happens at the ship
+step (`/merge`, or PR merge via `Closes #N`).**
 
 ## Step 4: Enter the worktree
 
@@ -96,26 +97,27 @@ cannot call `ExitWorktree` at all). Do not duplicate either flow here.
 
 Run the `/commit` flow while still inside the worktree. The commit lands on the
 worktree branch; `gh` issue updates work normally — the board is shared state, the
-tree is not. `/commit` closes issues exactly as it always does.
+tree is not. On a worktree branch `/commit` comments progress and checks off
+acceptance criteria but does **not** close the issue — issues close only when
+the work reaches the default branch.
 
-## Step 7: Exit and merge back
+## Step 7: Report the seam — this command ends here
 
-1. Call `ExitWorktree` with `action: "keep"`. **Never `remove` before merging —
-   remove deletes the branch and the work on it.**
-2. Back in the main checkout, confirm it is safe to merge:
-   - `git status --porcelain` — main tree clean
-   - no other session is mid-merge (two parallel `/execute-isolated` sessions must
-     serialize their merges — ask the user if unsure)
-3. Merge and clean up:
+The run is complete. Report the state, then stop:
 
-```bash
-git merge --no-ff <worktree-branch>
-git worktree remove .claude/worktrees/<name>
-git branch -d <worktree-branch>
-```
+- **Branch:** `<worktree-branch>` — all work committed
+- **Worktree:** kept (still under `.claude/worktrees/<name>`)
+- **Issue:** #`<NUMBER>` — open, claim held (`worktree:<name>`)
 
-4. Release the ownership claim: `./.claude/scripts/claim-issue.sh <NUMBER> release`
-   (if `/commit` closed the issue it already released — release is then a no-op).
+Then present the two endings:
+
+> Land it with **`/merge`** (merge into the default branch locally, close the
+> issue, push), or open a pull request with **`/pr`** (board → In Review; the
+> issue closes when the PR merges). Pick per branch, at ship time.
+
+Do NOT merge, exit the worktree, delete anything, or release the claim here —
+that is the ship step's job. The claim deliberately outlives this command; it
+is released by `/merge` or by `/continue`'s reconcile after a PR merges.
 
 ## Rollback: abandoning a run
 
@@ -130,7 +132,8 @@ release the abandoned claim: `./.claude/scripts/claim-issue.sh <NUMBER> release`
   `/execute-isolated <plan>`; the GitHub board is the shared state. Session
   ownership is the `worktree:<name>` claim label managed by `claim-issue.sh`
   (Step 3/7); `/continue` respects claims — see workflow.md §10 Coordination Layer.
-- `ExitWorktree` never merges anything — merge-back is always the explicit Step 7.
+- `ExitWorktree` never merges anything — landing is always an explicit ship
+  step afterwards: `/merge` locally, or `/pr` + upstream merge.
 - Gitignored files (`.env`, `.claude/settings.local.json`) are absent in
   worktrees. If the project needs them, add a `.worktreeinclude` file (gitignore
   syntax) at the repo root — see the Claude Code worktrees docs.

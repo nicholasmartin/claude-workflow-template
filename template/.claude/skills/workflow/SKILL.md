@@ -29,6 +29,8 @@ Read all of these before making any changes:
    - `.claude/commands/execute.md`
    - `.claude/commands/execute-team.md`
    - `.claude/commands/execute-isolated.md`
+   - `.claude/commands/merge.md`
+   - `.claude/commands/pr.md`
    - `.claude/commands/hotfix.md`
    - `.claude/commands/chore.md`
    - `.claude/commands/bug.md`
@@ -41,7 +43,7 @@ Read all of these before making any changes:
    - `.claude/commands/prime.md`
    - `.claude/commands/init-project.md`
 3. **Hook layer:** `.claude/settings.json` (wiring) and `.claude/hooks/*.sh` (post-edit-lint, stop-validate, pre-commit-scan, optional validate-local)
-4. **Plumbing scripts:** `.claude/scripts/*.sh` (board-state, move-issue, create-issue — the canonical GitHub interaction path)
+4. **Plumbing scripts:** `.claude/scripts/*.sh` (board-state, move-issue, create-issue, claim-issue, add-field-option — the canonical GitHub interaction path)
 5. **CLAUDE.md** sections that reference GitHub or workflow (Decision Protocol, Scope Enforcement)
 6. **GitHub Project state:**
    ```bash
@@ -70,6 +72,8 @@ Map the change against all components. Check each box for components that need u
 - [ ] `.claude/commands/execute.md`
 - [ ] `.claude/commands/execute-team.md`
 - [ ] `.claude/commands/execute-isolated.md`
+- [ ] `.claude/commands/merge.md`
+- [ ] `.claude/commands/pr.md`
 - [ ] `.claude/commands/hotfix.md`
 - [ ] `.claude/commands/chore.md`
 - [ ] `.claude/commands/bug.md`
@@ -84,7 +88,7 @@ Map the change against all components. Check each box for components that need u
 - [ ] `CLAUDE.md` (project rules)
 - [ ] `.claude/settings.json` (hook wiring)
 - [ ] `.claude/hooks/*.sh` (validation hook scripts)
-- [ ] `.claude/scripts/*.sh` (board plumbing: board-state, move-issue, create-issue, claim-issue)
+- [ ] `.claude/scripts/*.sh` (board plumbing: board-state, move-issue, create-issue, claim-issue, add-field-option)
 - [ ] GitHub Project fields (add/remove/rename via `gh project field-*`)
 - [ ] GitHub Project views (must be done in UI)
 - [ ] GitHub Project automations (must be done in UI)

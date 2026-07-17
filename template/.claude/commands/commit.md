@@ -60,12 +60,35 @@ Rules for the Context section:
 
 ## Post-Commit: Update GitHub Issues
 
-After committing, check if the work completed relates to any open GitHub issues:
+After committing, check if the work completed relates to any open GitHub issues.
+
+**First, the closing gate — issues close only when the work reaches the default
+branch:**
+
+```bash
+DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||') \
+  || DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)
+CUR=$(git branch --show-current)
+```
+
+- **On the default branch** (`CUR` == `$DEFAULT_BRANCH`): full flow below,
+  including closing.
+- **On any other branch** (or detached HEAD — empty `CUR` counts as
+  non-default): comment progress and check off acceptance criteria as below,
+  but do **NOT** close issues, move board items to Done, or release claims.
+  End the report with: "On branch `<CUR>` — issue #<N> stays open until this
+  lands on `<default>`. Ship it with `/merge` or `/pr`."
+- **Escape hatch:** if invoked as `/commit --close`, skip the gate and close
+  anyway (explicit user override for work that will never flow through a ship
+  step).
+
+Then:
 
 1. Run `gh issue list --repo {{REPO_OWNER}}/{{REPO_NAME}} --state open --json number,title,labels --limit 50` to see open issues
 2. If the committed work relates to an open issue:
    - Comment on the issue with the commit hash: `gh issue comment <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --body "Progress: <commit-hash> - <brief description of what was done>"`
    - If the issue has acceptance criteria checkboxes and any are now satisfied, update the issue body to check them off
+   - **The steps below run only when the closing gate is open (default branch, or `--close`):**
    - If ALL acceptance criteria are complete, close the issue: `gh issue close <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --comment "All acceptance criteria met in <commit-hash>."`
    - **After every close, set the board Status yourself:** `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT move its board item. The "item closed → Done" automation is optional UI configuration that may not be enabled; never rely on it. This applies to feature issues and task sub-issues alike.
    - **After every close, release the ownership claim:** `./.claude/scripts/claim-issue.sh <NUMBER> release` — removes any `worktree:*` label (no-op if unclaimed). Applies to feature issues and task sub-issues alike.
@@ -73,5 +96,5 @@ After committing, check if the work completed relates to any open GitHub issues:
      ```bash
      gh api graphql -f query='query { repository(owner: "{{REPO_OWNER}}", name: "{{REPO_NAME}}") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state } } } } }'
      ```
-     Close any open task sub-issues that have all their AC checked off, commenting with the commit hash on each.
+     Close any open task sub-issues that have all their AC checked off, commenting with the commit hash on each. The same gate applies to sub-issues — on a non-default branch they stay open too.
 3. If no open issues are affected, skip this step

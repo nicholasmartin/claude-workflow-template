@@ -227,7 +227,8 @@ gh project link $PROJECT_NUMBER --owner {{REPO_OWNER}} --repo {{REPO_OWNER}}/{{R
 
 ### Create custom fields
 
-The Status field exists by default. Create Phase and Priority:
+The Status field exists by default (with options Todo, In Progress, Done).
+Create Phase and Priority:
 
 ```bash
 # Create Phase field
@@ -237,6 +238,37 @@ gh project field-create $PROJECT_NUMBER --owner @me --name "Phase" --data-type "
 gh project field-create $PROJECT_NUMBER --owner @me --name "Priority" --data-type "SINGLE_SELECT" --single-select-options "Low,Medium,High,Critical"
 ```
 
+### Set the Status options via GraphQL
+
+Replace the default Status options with the workflow's five. This is done via
+the `updateProjectV2Field` mutation — **safe here because the board is brand
+new and empty**; the mutation replaces the entire option list, so on a board
+that already has items it would clear Status values (see the warning below).
+
+```bash
+# Get the Status field ID first
+STATUS_FIELD_ID=$(gh project field-list $PROJECT_NUMBER --owner @me --format json --jq '.fields[] | select(.name == "Status") | .id')
+
+gh api graphql -f query="mutation {
+  updateProjectV2Field(input: {
+    fieldId: \"$STATUS_FIELD_ID\"
+    singleSelectOptions: [
+      {name: \"Backlog\",     color: GRAY,   description: \"Not yet ready to work on\"},
+      {name: \"Ready\",       color: BLUE,   description: \"Ready to pick up\"},
+      {name: \"In Progress\", color: YELLOW, description: \"Actively being worked\"},
+      {name: \"In Review\",   color: PURPLE, description: \"PR open, awaiting review\"},
+      {name: \"Done\",        color: GREEN,  description: \"Complete\"}
+    ]
+  }) { projectV2Field { ... on ProjectV2SingleSelectField { options { id name } } } }
+}"
+```
+
+> **⚠ Never run a raw options mutation like this against a board that already
+> has items** — omitted options are deleted and their values cleared from
+> every item. On an existing board, add options in the GitHub UI or with
+> `./.claude/scripts/add-field-option.sh <field> <option>` (append-only,
+> rebuilds the list from a live read).
+
 ### Capture all field IDs
 
 ```bash
@@ -245,8 +277,7 @@ gh project field-list $PROJECT_NUMBER --owner @me --format json
 ```
 
 Parse the output to extract:
-- **Status field ID** and option IDs for: Backlog, Ready, In Progress, Done
-  - Note: "Todo" may need to be renamed to "Backlog" in the GitHub UI, or use "Todo" as the Backlog equivalent
+- **Status field ID** and option IDs for: Backlog, Ready, In Progress, In Review, Done
 - **Phase field ID** and option IDs for each phase
 - **Priority field ID** and option IDs for: Low, Medium, High, Critical
 
@@ -542,10 +573,10 @@ Report to the user:
 - supabase: [version or "not installed"]
 
 ### Created
-- GitHub Project board with Status, Phase, Priority fields
+- GitHub Project board with Status (incl. In Review), Phase, Priority fields
 - 17 labels (phase, type, priority, source)
 - Workflow configuration in .claude/workflow.md
-- 16 slash commands configured
+- 18 slash commands configured
 - CLAUDE.md (generated or starter)
 - Auto-format on commit (if configured): Husky + lint-staged + Prettier
 
@@ -563,6 +594,8 @@ Report to the user:
 - /plan-feature  - Plan a feature
 - /execute       - Implement a plan
 - /commit        - Commit with issue tracking
+- /merge         - Land a feature branch locally (ship step)
+- /pr            - Open a pull request (ship step)
 - /continue      - Resume next session
 - /status        - Review progress
 ```
@@ -570,8 +603,8 @@ Report to the user:
 ## Notes
 
 - If `gh project create` fails, the user may need to enable Projects in their GitHub settings
-- The Status field is created by default with options: Todo, In Progress, Done. "Backlog" and "Ready" may need to be added manually in the GitHub UI, or use "Todo" as the backlog equivalent
-- Phase options can be added later as the project grows via `gh project field-edit`
+- The Status field is created by default with options: Todo, In Progress, Done. Step 4 replaces them via the `updateProjectV2Field` GraphQL mutation (safe only on a fresh, empty board — see the warning there)
+- Phase options are added later as the project grows via `./.claude/scripts/add-field-option.sh Phase "Phase N"` (append-only, safe on populated boards)
 - Area labels are intentionally NOT created here since they are project-specific. Add them as needed (e.g., `area:auth`, `area:dashboard`)
 - On Windows, `winget` is the default package manager. If the user prefers Chocolatey (`choco`), adapt commands accordingly (e.g., `choco install gh git`)
 - On WSL, use Linux install commands since WSL is a Linux environment

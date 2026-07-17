@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph BUILD["Build (unchanged through the commit)"]
+        A["/execute-isolated plan.md"] --> B["execute plan in worktree\n(claim held: worktree:&lt;name&gt;)"]
+        B --> C["/commit on the worktree branch\ncomments + AC checkoff ONLY\n(closing gate: not the default branch)"]
+    end
+
+    C --> SEAM{"THE SEAM\nwork committed on branch —\nhow does it land?\n(engineer picks, per branch)"}
+
+    subgraph LOCAL["/merge — local ending"]
+        SEAM -- "/merge" --> G{"protection guard\ngh api .../branches/&lt;def&gt;\n--jq .protected\n(fail-safe: error ⇒ protected)"}
+        G -- "protected" --> RED["STOP → run /pr instead\n(nothing merged, nothing closed)"]
+        G -- "false" --> M["ExitWorktree(keep)\ngit merge --no-ff, push"]
+        M --> MC["close issue, board → Done,\nrelease claim\n(work reached default branch)"]
+        MC --> K{"delete branch\n+ worktree?"}
+        K -- "default: KEEP" --> K1["/continue GCs\nmerged branches later"]
+        K -- "explicit yes" --> K2["worktree remove FIRST,\nthen branch -d"]
+    end
+
+    subgraph REMOTE["/pr — remote ending"]
+        SEAM -- "/pr" --> P["push branch, gh pr create\n(never merges; --reviewer/--draft)\nCloses #N in body"]
+        P --> IR["board → In Review\nissue open, claim held,\nbranch + worktree stay alive"]
+        IR -. "review feedback:\nfix, /commit, push\n(or stack next branch on top)" .-> IR
+        IR --> UM["reviewer squash-merges\nin GitHub → issue auto-closes"]
+        UM --> R["/continue reconcile:\npull default, board → Done,\nrelease claim"]
+        R --> S{"stack check:\ngit branch --contains"}
+        S -- "descendant exists" --> S1["NEVER delete —\noffer: git rebase --onto\norigin/&lt;def&gt; A B"]
+        S -- "no descendants" --> S2["consent-gated git branch -D\n(squash defeats -d;\nPR merged-state is authority)"]
+    end
+
+    MC --> DONE(["issue closed, board Done,\nclaim released — invariant held:\nclosed ⟺ work on default branch"])
+    S2 --> DONE

@@ -29,7 +29,7 @@ This document defines how {{PROJECT_NAME}} manages work through GitHub Issues, P
 
 | Field             | Type          | Values                                  | Purpose                                                             |
 | ----------------- | ------------- | --------------------------------------- | ------------------------------------------------------------------- |
-| **Status**        | Single select | Backlog, Ready, In Progress, Done       | Workflow state                                                      |
+| **Status**        | Single select | Backlog, Ready, In Progress, In Review, Done | Workflow state ("In Review" = PR open, awaiting review — set by `/pr`, resolved by `/continue` reconcile) |
 | **Phase**         | Single select | Phase 1-N (add new phases as needed)    | Groups work by development phase                                    |
 | **Priority**      | Single select | Low, Medium, High, Critical             | Importance ranking                                                  |
 
@@ -39,7 +39,7 @@ This document defines how {{PROJECT_NAME}} manages work through GitHub Issues, P
 | --------------- | ------------------------- | ---------------------------- | ----------------------------------------------- |
 | **Epics**       | Table (hierarchy enabled) | `has:phase`                  | Phase-level overview with expandable sub-issues |
 | **Bugs**        | Board                     | `label:type:bug`             | All bugs, grouped by status                     |
-| **Active Work** | Board (by Status)         | `status:Ready,"In Progress"` | Daily working view, no backlog noise            |
+| **Active Work** | Board (by Status)         | `status:Ready,"In Progress","In Review"` | Daily working view, no backlog noise            |
 | **Backlog**     | Board                     | `status:Backlog`             | Everything not yet started                      |
 
 ### Automations
@@ -139,9 +139,31 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 4. /commit commits the code
    - Comments on related issues     With commit hash
    - Checks off AC checkboxes       In issue body
-   - Closes issues if all AC met    With reference to commit
-   - Board auto-updates to Done     Via automation
+   - ON THE DEFAULT BRANCH:         Closes issues if all AC met,
+                                    moves board to Done (move-issue.sh),
+                                    releases claims
+   - ON A FEATURE BRANCH:           Never closes — work hasn't landed yet.
+                                    Points at the ship step below.
+   |
+   v
+5. THE SHIP STEP (branch work only) — pick per branch, at ship time:
+
+   /merge (local ending)            Lands the branch on the default branch
+   - branch-protection guard        (protected -> redirected to /pr)
+   - git merge --no-ff, push
+   - closes issues, board -> Done, releases claim
+   - branch/worktree kept by default (deletion is explicit)
+
+   /pr (remote ending)              Opens a pull request
+   - board -> "In Review"           Issue stays open, claim stays held
+   - Closes #N fires when the PR    is merged by a reviewer
+   - /continue reconcile afterwards: pull, board -> Done, release claim,
+     stack-aware branch GC
 ```
+
+**The governing invariant: an issue closes only when its work reaches the default branch**
+— via `/commit` on that branch, via `/merge`, or via a merged PR. Nothing
+closes issues from an unmerged feature branch (escape hatch: `/commit --close`).
 
 ### Quick fixes and bugs
 
@@ -257,14 +279,14 @@ Each slash command interacts with GitHub in specific ways:
 - **Reads:** Plan file (passed as argument), especially its Integration Contracts section
 - **Spawns:** teammate agents (2–5) via the experimental agent-teams feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) — the lead distributes contract slices and coordinates; falls back to `/execute` with a clear message when the flag is unset (see section 9, Subagent Layer)
 - **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue (`claim-issue.sh` — see section 10), checks off AC in issue body
-- **Post-execution:** Comments a per-agent summary; leaves the issue open — only `/commit` closes issues
+- **Post-execution:** Comments a per-agent summary; leaves the issue open — closing happens at the ship step (see section 5)
 
 ### /execute-isolated
 
 - **Reads:** Plan file (passed as argument) — read in full **before** entering the worktree (worktrees branch from the remote default branch; an uncommitted plan file won't exist inside)
 - **Spawns:** whatever the plan's recommended executor spawns — `/execute`'s verifier roster by default, or `/execute-team`'s teammates when the plan recommends the team executor and the agent-teams flag is set (flag unset → single-agent `/execute` inside the same worktree)
 - **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue for the run's worktree (`claim-issue.sh <N> claim <slug>` — see section 10)
-- **Post-execution:** `/commit` runs on the worktree branch; then `ExitWorktree (keep)` → merge back from the main checkout → worktree/branch cleanup → claim release. Rollback path: `ExitWorktree (remove)` + claim release — the main tree is never touched
+- **Post-execution:** `/commit` runs on the worktree branch (comments + AC only — no close off the default branch), then the command **ends at the commit seam**: branch and worktree kept, issue open, claim held. It reports the two ship endings — `/merge` or `/pr` — and stops. Rollback path: `ExitWorktree (remove)` + claim release — the main tree is never touched
 - **Fallback:** falls back to plain `/execute` with a clear message when worktree tools are unavailable
 
 ### /hotfix
@@ -297,12 +319,28 @@ Each slash command interacts with GitHub in specific ways:
 ### /commit
 
 - **Reads:** Open issues list to find related issues
-- **Updates:** Comments on related issues with commit hash, checks off completed AC, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon), then releases each closed issue's ownership claim via `claim-issue.sh <N> release` (see section 10)
+- **Updates:** Comments on related issues with commit hash, checks off completed AC. **Closing is gated on the default branch:** on it, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon), then releases each closed issue's ownership claim via `claim-issue.sh <N> release` (see section 10). On a feature branch: never closes/moves/releases — points at `/merge` / `/pr` instead (escape hatch: `/commit --close`).
 - **AI context tracking:** When staged files include AI context assets (`.claude/rules/`, `.claude/commands/`, `.claude/docs/`, `.claude/skills/`, `CLAUDE.md`, `.claude/workflow.md`), a `Context:` section is appended to the commit body describing what changed and why.
+
+### /merge
+
+- **Reads:** current branch state; the issue(s) the branch implements (plan file or ask)
+- **Guards:** refuses on the default branch; requires a clean tree; **branch-protection guard** — `gh api repos/<o>/<r>/branches/<default> --jq .protected` (read-access-safe, reflects rulesets; fail-safe: API failure = assume protected) → protected repos are redirected to `/pr` before anything mutates
+- **Does:** `ExitWorktree (keep)` if needed, serialized `git merge --no-ff`, push — the local ship ending
+- **Updates:** comments landing hash, checks off AC, closes issues when AC met, board → Done via `move-issue.sh`, releases claim via `claim-issue.sh`
+- **Never:** auto-resolves conflicts, force-pushes, or deletes branches/worktrees without an explicit yes (default: keep — `/continue` GCs later)
+
+### /pr
+
+- **Reads:** current branch state; the issue the branch implements (plan file or ask)
+- **Does:** pushes the branch, opens the PR (`--reviewer`, `--draft` passthrough; duplicate-PR is reported, not an error) with `Closes #<issue>` in the body — the remote ship ending. **Never merges** (no `gh pr` merge subcommand — merging is the reviewer's call)
+- **Updates:** board → "In Review" via `move-issue.sh`, comments the PR URL on the issue. Issue stays open, claim stays held, branch + worktree stay alive (review feedback lands in place; stack follow-up work on top in the same worktree)
+- **Afterwards:** the PR merge closes the issue via `Closes #N`; `/continue`'s reconcile finishes the bookkeeping (see below)
 
 ### /continue
 
-- **Reads:** Project board state, open issues, git status + `git worktree list` (auto-gathered via `.claude/scripts/board-state.sh` inline bash)
+- **Reads:** Project board state, open issues, git status + `git worktree list` + a **merged-PR probe** over local branches (auto-gathered via `.claude/scripts/board-state.sh` + inline bash)
+- **Reconciles (Step 2):** for each local branch whose PR merged upstream — pulls the default branch, board → Done + claim release (always, even when `Closes #N` already closed the issue), then **stack-aware** branch GC: never deletes a branch with local descendants (offers `git rebase --onto` instead); otherwise consent-gated `git branch -D` (squash-merges defeat `-d`; the PR's merged state is the authority), worktree removal first
 - **Purpose:** Resume work by showing current state and suggesting next tasks — claim-aware: surfaces `worktree:*` ownership, skips issues claimed by other sessions, flags stale claims (see section 10)
 
 ### /status
@@ -421,10 +459,14 @@ A **claim** is a dynamic `worktree:<name>` label on an issue, managed by
   live in the main tree.
 - **Visible everywhere free of charge:** claims are labels, so they arrive in
   `board-state.sh` output (issues *and* board items) with zero extra API calls.
-- **Release:** `/commit` releases claims on every issue it closes;
-  `/execute-isolated` releases after merge-back or rollback. `release` also
-  deletes the label object once no open issue carries it (self-cleaning — the
-  taxonomy row in section 4 documents a *pattern*, not a fixed label set).
+- **Release — happens at the ship step, where the work lands:** `/commit`
+  releases claims on issues it closes (default branch only); `/merge` releases
+  after landing; `/continue`'s reconcile releases when a PR has merged
+  upstream. `/execute-isolated` ends with the claim **deliberately held** (the
+  branch is committed but not landed — PR-parked branches keep their claim by
+  design) and releases only on rollback/abandon. `release` also deletes the
+  label object once no open issue carries it (self-cleaning — the taxonomy row
+  in section 4 documents a *pattern*, not a fixed label set).
 
 ### Collision rule
 

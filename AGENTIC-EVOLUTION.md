@@ -197,8 +197,11 @@ of two endings per branch.
   only when its work reaches the default branch*).
 - **New `/merge` — the local ending.** For "I need this under my feet for the
   next task." Safety checks (clean main tree, serialized against other sessions'
-  merges), a **branch-protection guard** (`gh api .../branches/<default>/protection`
-  — protected → stop and point at `/pr` *before* anything happens), then
+  merges), a **branch-protection guard** (`gh api repos/{o}/{r}/branches/<default>
+  --jq .protected` — the branch object's boolean needs only read access and
+  reflects rulesets; the `/protection` endpoint is admin-gated and 404s
+  ambiguously for non-admins — protected → stop and point at `/pr` *before*
+  anything happens), then
   `git merge --no-ff`, closure bookkeeping (close issue, board → Done, release
   claim), push. Branch/worktree **deletion is an explicit final step, never a
   side effect** — default keep; `/continue` offers GC of fully-merged branches.

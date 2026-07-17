@@ -45,6 +45,7 @@ for rel in "${files[@]}"; do
     -e "s|{{STATUS_BACKLOG_ID}}|$STATUS_BACKLOG_ID|g" \
     -e "s|{{STATUS_READY_ID}}|$STATUS_READY_ID|g" \
     -e "s|{{STATUS_IN_PROGRESS_ID}}|$STATUS_IN_PROGRESS_ID|g" \
+    -e "s|{{STATUS_IN_REVIEW_ID}}|$STATUS_IN_REVIEW_ID|g" \
     -e "s|{{STATUS_DONE_ID}}|$STATUS_DONE_ID|g" \
     -e "s|{{PHASE_FIELD_ID}}|$PHASE_FIELD_ID|g" \
     -e "s|{{PRIORITY_FIELD_ID}}|$PRIORITY_FIELD_ID|g" \

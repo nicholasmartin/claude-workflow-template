@@ -60,7 +60,7 @@ There is no build, no package.json, no test framework — validation is structur
 /
 ├── template/            # THE PRODUCT: what gets copied into user projects
 │   ├── .claude/
-│   │   ├── commands/    # 16 slash commands (plan-feature, execute, execute-team, hotfix, bug, chore, ...)
+│   │   ├── commands/    # 18 slash commands (plan-feature, execute, execute-team, merge, pr, hotfix, bug, chore, ...)
 │   │   ├── skills/      # workflow skill (meta: modify the system safely)
 │   │   ├── rules/       # example path-scoped rules
 │   │   ├── docs/        # example scout-friendly reference docs
@@ -84,7 +84,7 @@ This repo tracks its own work on GitHub Project board #18 (`Claude Workflow Temp
 
 When starting work on any GitHub issue, move it to "In Progress" on the project board before making changes.
 
-**Never close issues or move them to "Done" during implementation.** Only `/commit` closes issues.
+**Never close issues or move them to "Done" during implementation.** Issues close only at the ship step — `/commit` on the default branch, `/merge`, or a merged PR (`Closes #N`); `/commit` on a feature branch never closes (escape hatch: `/commit --close`).
 
 **After creating a GitHub issue**, always:
 1. Add the item to the project board via GraphQL (`addProjectV2ItemById`)

@@ -27,7 +27,8 @@ If the argument is (or references) an existing GitHub issue:
 
 If no issue exists, skip this step entirely; **do not create one** — issue ceremony is exactly what a hotfix sheds.
 
-**Never close issues or move them to Done here — only `/commit` closes issues.**
+**Never close issues or move them to Done here — closing happens at the ship
+step (`/commit` on the default branch, `/merge`, or a merged PR).**
 
 ## Step 1: Diagnose fast
 
@@ -48,4 +49,4 @@ Apply the fix. Then demonstrate the broken behavior is gone with **one targeted 
 Report what was broken, what changed, and the proof it's fixed. Then run `/commit`:
 
 - The commit tag MUST be `fix:` — `hotfix` is not a Conventional Commits type.
-- Leave the issue open; **only `/commit` closes issues.**
+- Leave the issue open; **closing happens at the ship step** (`/commit` on the default branch — the usual hotfix case — or `/merge` / a merged PR for branch work).

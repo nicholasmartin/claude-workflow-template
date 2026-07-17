@@ -10,16 +10,47 @@ Board and issue state:
 Git state:
 !`git status --porcelain; git log --oneline -10; git branch --show-current; git worktree list`
 
-## Step 2: Analyze and report
+Merged-PR probe (local branches whose PR already merged upstream):
+!`DEF=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'); for BR in $(git for-each-ref --format='%(refname:short)' refs/heads/); do [ "$BR" = "$DEF" ] && continue; M=$(gh pr list --head "$BR" --state merged --json number,mergedAt --jq '.[0].number' 2>/dev/null); [ -n "$M" ] && echo "MERGED: $BR (PR #$M)"; done; true`
+
+## Step 2: Reconcile shipped work
+
+For each `MERGED:` branch from the probe (skip this step if there are none),
+the work is on the default branch upstream but local state lags. Reconcile:
+
+1. **Pull:** `git checkout <default-branch> && git pull`
+2. **Board + claim — always run both, even if `Closes #N` already closed the
+   issue** (GitHub's auto-close never moves the board item or removes labels):
+   - if the linked issue is still open, close it with a comment referencing the PR
+   - `./.claude/scripts/move-issue.sh <NUMBER> Done`
+   - `./.claude/scripts/claim-issue.sh <NUMBER> release`
+3. **Stack check before any deletion:**
+   `git branch --contains <BR> | grep -v " <BR>$"` — any *other* branch listed
+   descends from `<BR>`. If so, do **NOT** delete `<BR>`; instead offer the
+   stack-down rebase with the names filled in:
+   `git rebase --onto origin/<default-branch> <BR> <descendant>` (then re-run
+   this reconcile — `<BR>` becomes deletable once nothing descends from it).
+4. **Offer cleanup (consent-gated, mirror the stale-claim rule):** never delete
+   silently — ask first. On yes:
+   - if a worktree has `<BR>` checked out (`git worktree list`), remove it
+     first: `git worktree remove <path>` (a checked-out branch cannot be
+     deleted)
+   - `git branch -D <BR>` — `-D` is required: after a squash-merge the branch
+     is never "fully merged" in git's eyes; the PR's MERGED state (the probe)
+     is the source of truth.
+
+## Step 3: Analyze and report
 
 Based on the gathered data, produce a concise status report as a table:
 
-| # | Issue | Phase | Priority | Status | Labels | Claim |
-|---|-------|-------|----------|--------|--------|-------|
+| # | Issue | Phase | Priority | Status | Labels | Claim | PR |
+|---|-------|-------|----------|--------|--------|-------|-----|
 
 The **Claim** column is the `<name>` part of a `worktree:<name>` label, or `—`
-if unclaimed. Group by status: **In Progress** first, then **Ready**, then
-**Backlog**.
+if unclaimed. The **PR** column: `open` for a branch with an open PR (board
+should read In Review), `merged` if the probe flagged it (reconcile pending —
+Step 2), or `—`. Group by status: **In Progress** first, then **In Review**,
+then **Ready**, then **Backlog**.
 
 Then summarize:
 - What is currently **In Progress** (if anything)
@@ -32,7 +63,7 @@ Then summarize:
 
 End with: "What would you like to work on?"
 
-## Step 3: Determining work order
+## Step 4: Determining work order
 
 When the user picks a task, or if they ask you to suggest one, prioritize by:
 

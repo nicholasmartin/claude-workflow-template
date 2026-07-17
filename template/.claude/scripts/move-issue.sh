@@ -8,7 +8,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: move-issue.sh <issue-number> <Backlog|Ready|\"In Progress\"|Done>" >&2
+  echo "usage: move-issue.sh <issue-number> <Backlog|Ready|\"In Progress\"|\"In Review\"|Done>" >&2
   exit 1
 }
 [ $# -eq 2 ] || usage
@@ -18,6 +18,7 @@ case "$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')" in
   backlog)       OPT="{{STATUS_BACKLOG_ID}}" ;;
   ready)         OPT="{{STATUS_READY_ID}}" ;;
   "in progress") OPT="{{STATUS_IN_PROGRESS_ID}}" ;;
+  "in review")   OPT="{{STATUS_IN_REVIEW_ID}}" ;;
   done)          OPT="{{STATUS_DONE_ID}}" ;;
   *) usage ;;
 esac

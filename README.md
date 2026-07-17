@@ -72,6 +72,8 @@ A comprehensive Claude Code plugin collection from an Anthropic hackathon winner
 | `/plan-feature` | Create a detailed implementation plan and GitHub issue from a feature request |
 | `/execute` | Implement a plan step by step with pre-flight checks and deviation rules |
 | `/commit` | Smart commit with placeholder scanning, AI context tracking, and issue updates |
+| `/merge` | Land a feature branch on the default branch locally (ship step; protection-guarded) |
+| `/pr` | Push the branch and open a pull request — never merges (ship step; board → In Review) |
 | `/continue` | Resume a session by scanning board state and suggesting next tasks |
 | `/status` | Progress review across all phases |
 | `/create-prd` | Generate a Product Requirements Document |
