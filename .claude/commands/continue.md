@@ -68,7 +68,9 @@ End with: "What would you like to work on?"
 When the user picks a task, or if they ask you to suggest one, prioritize by:
 
 1. Issues already marked "In Progress" on the project board
-2. `priority:critical` and `priority:high` issues first
+2. Board **Priority field** Critical, then High, first (the board dump from
+   board-state.sh carries each item's `priority` value — there are no
+   priority labels; the field is the only source)
 3. Within the same priority, lower issue numbers first (earlier work before later)
 4. Look for dependency references in issue bodies ("depends on #X", "blocked by #Y")
 5. The project board is the source of truth

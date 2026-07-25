@@ -504,7 +504,7 @@ After creating the Plan:
      ./.claude/scripts/create-issue.sh \
        --title "<feature title>" \
        --body-file <path-to-body> \
-       --labels "phase:N,type:feature,priority:X" \
+       --labels "phase:N,type:feature" \
        --phase "Phase N" --priority High --status Ready \
        --parent <phase-epic-number>   # omit if no epic applies
      ```
@@ -516,7 +516,7 @@ After creating the Plan:
 
    ```bash
    ./.claude/scripts/create-issue.sh --title "Task: <step>" --body-file <path> \
-     --labels "phase:N,type:infra,priority:X" --phase "Phase N" --status Ready \
+     --labels "phase:N,type:infra" --phase "Phase N" --status Ready \
      --parent <feature-issue-number>
    ```
 

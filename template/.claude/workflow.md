@@ -71,7 +71,7 @@ Phase Epic (parent issue)
   |     - Context/problem description
   |     - Acceptance criteria (checkboxes)
   |     - Link to plan file (.agents/plans/*.md)
-  |     - Labels: phase, type, priority, area
+  |     - Labels: phase, type, area (priority is a BOARD FIELD only — no label)
   |     |
   |     +-- Task Sub-issue (optional, for larger features)
   |           e.g., "Configure JWT token refresh"
@@ -104,7 +104,6 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 | ------------ | ----------------------------------------------------------------------------------------------- | ----------------------------- |
 | **Phase**    | `phase:1` through `phase:N` (add more as needed)                                                | Which development phase       |
 | **Type**     | `type:feature`, `type:bug`, `type:infra`, `type:polish`, `type:dx`, `type:tech-debt`, `type:docs` | What kind of work           |
-| **Priority** | `priority:critical`, `priority:high`, `priority:medium`, `priority:low`                         | How urgent                    |
 | **Area**     | (project-specific, add as needed)                                                                | What part of the system       |
 | **Source**   | `source:research`, `source:user-report`, `source:internal`                                      | Where the issue came from     |
 | **Worktree** | `worktree:<name>` (dynamic — created/removed by `claim-issue.sh`, never pre-created)             | Session ownership claim (see section 10) |
@@ -204,7 +203,7 @@ One call performs every required step (create + labels + board add + Status/Prio
 
 ```bash
 ./.claude/scripts/create-issue.sh --title "..." --body-file <path> \
-  --labels "phase:1,type:feature,priority:high" \
+  --labels "phase:1,type:feature" \
   --phase "Phase 1" --priority High --status Backlog --parent <epic-number>
 ```
 
@@ -212,7 +211,7 @@ Rules the script enforces (and that still apply if an issue is ever created manu
 
 1. Every issue goes on the project board — labels alone do not set board fields
 2. Status is always set (Backlog for new issues unless specified)
-3. Priority is always set
+3. Priority is always set — on the board field only (`--priority`); there are no priority labels
 4. Every issue with a Phase field must be linked to its epic (`--parent`)
 5. Board moves later use `./.claude/scripts/move-issue.sh <number> <status>`
 
@@ -234,7 +233,7 @@ For reference (and for cases the script doesn't cover), the raw sequence:
 # 1. Create issue
 ISSUE_URL=$(gh issue create --repo {{REPO_OWNER}}/{{REPO_NAME}} \
   --title "Feature title" \
-  --label "phase:1,type:feature,priority:high" \
+  --label "phase:1,type:feature" \
   --body "...")
 
 # 2. Get issue node ID

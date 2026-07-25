@@ -304,11 +304,9 @@ gh label create "type:dx" --repo $REPO --color "C5DEF5" --description "Developer
 gh label create "type:tech-debt" --repo $REPO --color "D4C5F9" --description "Technical debt" --force
 gh label create "type:docs" --repo $REPO --color "0075CA" --description "Documentation" --force
 
-# Priority labels
-gh label create "priority:critical" --repo $REPO --color "B60205" --description "Critical priority" --force
-gh label create "priority:high" --repo $REPO --color "D93F0B" --description "High priority" --force
-gh label create "priority:medium" --repo $REPO --color "FBCA04" --description "Medium priority" --force
-gh label create "priority:low" --repo $REPO --color "0E8A16" --description "Low priority" --force
+# No priority labels — priority is recorded ONLY in the board's Priority field
+# (set via create-issue.sh --priority). A label would be a second write path
+# that drifts from the field. Deliberate omission, not an oversight.
 
 # Source labels
 gh label create "source:research" --repo $REPO --color "C2E0C6" --description "From research" --force
@@ -574,7 +572,7 @@ Report to the user:
 
 ### Created
 - GitHub Project board with Status (incl. In Review), Phase, Priority fields
-- 17 labels (phase, type, priority, source)
+- 13 labels (phase, type, source — priority lives only in the board's Priority field)
 - Workflow configuration in .claude/workflow.md
 - 18 slash commands configured
 - CLAUDE.md (generated or starter)
