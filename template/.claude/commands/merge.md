@@ -88,16 +88,25 @@ or ask the user — mirror `/execute` Step 0):
 
 1. Comment the landing: `gh issue comment <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --body "Landed on $DEFAULT_BRANCH in <merge-commit-hash>."`
 2. Check off acceptance criteria now satisfied (edit the issue body).
-3. If ALL acceptance criteria are met, close:
+3. **Sub-issue sweep first:** fetch the issue's task sub-issues (the
+   `subIssues` GraphQL query from `/commit`); close every open sub-issue whose
+   AC are all checked off, commenting the landing on each, and move each
+   closed one to Done via `move-issue.sh`. `type:ops` sub-issues close only
+   when their operator checklist is actually done.
+4. **Close the parent only when ALL its sub-issues are closed AND its own
+   Definition of Done is ticked** (small features without sub-issues: when all
+   AC are met):
    `gh issue close <NUMBER> --repo {{REPO_OWNER}}/{{REPO_NAME}} --comment "All acceptance criteria met — landed in <merge-commit-hash>."`
-4. **After every close, set the board Status yourself:**
+5. **After every close, set the board Status yourself:**
    `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT
    move its board item.
-5. **After every close, release the ownership claim:**
-   `./.claude/scripts/claim-issue.sh <NUMBER> release` (no-op if unclaimed).
+6. **After every close, release the ownership claim:**
+   `./.claude/scripts/claim-issue.sh <NUMBER> release` (no-op if unclaimed;
+   sub-issues are never claimed).
 
-If AC remain unchecked, leave the issue open (comment progress only) and tell
-the user what's outstanding.
+If AC or sub-issues remain open (usually `type:ops` operator work), leave the
+parent open (comment progress only) and tell the user what's outstanding —
+that is the correct state, not a failure.
 
 ## Step 7: Push
 

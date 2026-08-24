@@ -163,5 +163,6 @@ After implementing:
 - **Never add a GitHub field without documenting it** in workflow.md section 2
 - **Never change label taxonomy without updating** workflow.md section 4
 - **Never change the claim convention (claim-issue.sh, worktree: labels) without updating workflow.md section 10, Coordination Layer** in the same change
+- **Never change the sub-issue AC model in one place only** — the plan's TASK SUB-ISSUES mapping table, sub-issues as acceptance-criteria carriers, the parent's thin Definition of Done, the `type:ops` operator convention, and the widened "In Review = done, not landed" status span `plan-feature.md`, `execute*.md`, `commit.md`, `merge.md`, `continue.md`, AND workflow.md §2/§3/§4/§5 together; a change to any one must update the rest
 - **Test command syntax** by reading the updated command file and verifying `gh` commands reference valid field/option IDs
 - **Note UI-only changes** clearly, since views and automations can't be configured via API

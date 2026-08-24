@@ -11,12 +11,19 @@ Read plan file: `$ARGUMENTS`
 
 ## Execution Instructions
 
-### 0. Link to GitHub Issue
+### 0. Link to GitHub Issue(s) and the Sub-issue Map
 
 - Ask the user which GitHub issue this plan implements (if not obvious from the plan)
 - Read the issue body: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
-- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user. The claim is **parent-only** — sub-issues ride the parent's worktree and are never claimed separately.
+- **Load the sub-issue map** from the plan's `## TASK SUB-ISSUES` table. Each row maps a sub-issue to the plan tasks that implement it; the sub-issue carries the authoritative AC for that slice. Rules:
+  - Do **NOT** bulk-move sub-issues now. Each one moves through its own lifecycle as its tasks are actually picked up (step 3).
+  - `type:ops` rows are operator work: never execute them, never move them — list them in the output report as outstanding operator steps.
+  - If the feature has sub-issues but the plan lacks the table (pre-mapping plans), fetch them once and map by title before starting:
+    ```bash
+    gh api graphql -f query='query { repository(owner: "nicholasmartin", name: "claude-workflow-template") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title labels(first:10){nodes{name}} } } } } }'
+    ```
 
 ### 1. Pre-flight Checks
 
@@ -62,6 +69,7 @@ For EACH task in "Step by Step Tasks":
 
 - Identify the file and action required
 - Read existing related files if modifying
+- **Sub-issue pickup:** if this is the FIRST task mapped to a sub-issue that is still Ready, move it now: `./.claude/scripts/move-issue.sh <SUB> "In Progress"`. Two sub-issues may legitimately be In Progress at once — execution doesn't always respect slice boundaries (a compiler-driven migration can touch several slices in one sweep); the map is task-granular, not sequential.
 
 #### b. Implement the task
 
@@ -83,6 +91,14 @@ After the task's VALIDATE command passes, spawn one verification subagent (`suba
 Instruct it: _"Independently confirm the VERIFY and DONE claims with fresh eyes — read the artifacts; run the task's VALIDATE command only if it is read-only/idempotent. Do not trust the builder's claims. Your final message: `VERDICT: PASS` or `VERDICT: FAIL — <evidence with file:line>`, nothing else on PASS."_
 
 Verifiers report, never repair — if a verifier finds a problem, you fix it and re-verify. You may proceed to the next task while verifiers run in the background; the hooks check deterministic conditions, the verifier checks the task's *claims* — don't ask it to re-run lint.
+
+#### d. Close out the sub-issue slice
+
+When the LAST task mapped to a sub-issue has passed its VALIDATE command **and** every verifier covering its tasks has reported PASS:
+
+1. Check off the sub-issue's acceptance criteria (`gh issue edit <SUB> --repo nicholasmartin/claude-workflow-template --body "<updated body>"`)
+2. Comment which plan tasks completed it
+3. Move it to "In Review": `./.claude/scripts/move-issue.sh <SUB> "In Review"` — In Review means *work complete, not yet landed on the default branch*. Never close it or move it to Done here — closing happens at ship time (workflow.md §5).
 
 ### 4. Implement Testing Strategy
 
@@ -143,12 +159,12 @@ Provide summary:
 
 ### GitHub Issue Update
 
-Update the related GitHub issue:
+Update the related GitHub issue(s):
 
-- Check off completed acceptance criteria in the issue body using `gh issue edit <NUMBER> --repo nicholasmartin/claude-workflow-template --body "<updated body>"`
+- **Sub-issues first:** confirm every implementation sub-issue reached In Review with its AC checked (step 3d) — sweep any that slipped through. List `type:ops` sub-issues as outstanding operator work.
+- **Feature issue:** check off its thin Definition of Done boxes now satisfied (`gh issue edit <NUMBER> --repo nicholasmartin/claude-workflow-template --body "<updated body>"`); on a small feature without sub-issues, check off its full AC instead.
 - Comment with a summary: `gh issue comment <NUMBER> --repo nicholasmartin/claude-workflow-template --body "Implementation complete via /execute. Files changed: ... Commit pending."`
-- If ALL acceptance criteria are met, note that the issue is ready to close (close it after the commit)
-- Move the board item to "Done" if fully complete (or leave "In Progress" if partially done)
+- **Never close anything or move anything to Done here** (CLAUDE.md rule): the feature issue stays In Progress, completed sub-issues sit at In Review, and closing happens at ship time — `/commit` on the default branch, or `/merge` / `/pr` + `/continue` for branch work.
 
 ### Ready for Commit
 

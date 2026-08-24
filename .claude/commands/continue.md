@@ -21,8 +21,13 @@ the work is on the default branch upstream but local state lags. Reconcile:
 1. **Pull:** `git checkout <default-branch> && git pull`
 2. **Board + claim — always run both, even if `Closes #N` already closed the
    issue** (GitHub's auto-close never moves the board item or removes labels):
-   - if the linked issue is still open, close it with a comment referencing the PR
-   - `./.claude/scripts/move-issue.sh <NUMBER> Done`
+   - **sub-issues first:** close any open task sub-issue whose AC are all
+     checked (comment the PR), moving each to Done; a parent with open
+     sub-issues (usually `type:ops` operator work) stays open — report it as
+     outstanding rather than forcing it closed
+   - if the linked issue is still open and all its sub-issues are closed +
+     its Definition of Done ticked, close it with a comment referencing the PR
+   - `./.claude/scripts/move-issue.sh <NUMBER> Done` (for each issue closed)
    - `./.claude/scripts/claim-issue.sh <NUMBER> release`
 3. **Stack check before any deletion:**
    `git branch --contains <BR> | grep -v " <BR>$"` — any *other* branch listed

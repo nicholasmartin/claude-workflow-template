@@ -52,9 +52,15 @@ verbatim from what you read in this step before executing anything.
   COLLISION` (exit 3), STOP and tell the user which worktree owns the issue.
   Re-entering a resumed worktree re-claims idempotently (re-adding an
   already-present label is a no-op).
+  The claim is parent-only — sub-issues are never claimed separately.
 
 **Never close issues or move them to Done here — closing happens at the ship
 step (`/merge`, or PR merge via `Closes #N`).**
+
+The plan's `## TASK SUB-ISSUES` map is honored INSIDE the worktree run (the
+inner `/execute` flow moves each sub-issue Ready → In Progress → In Review as
+its mapped tasks are picked up and verified; `type:ops` rows are skipped) —
+the board is shared state, so those moves work normally from the worktree.
 
 ## Step 4: Enter the worktree
 

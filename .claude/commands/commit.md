@@ -88,13 +88,14 @@ Then:
 2. If the committed work relates to an open issue:
    - Comment on the issue with the commit hash: `gh issue comment <NUMBER> --repo nicholasmartin/claude-workflow-template --body "Progress: <commit-hash> - <brief description of what was done>"`
    - If the issue has acceptance criteria checkboxes and any are now satisfied, update the issue body to check them off
+   - **Task sub-issues (every commit, gate or no gate):** if the committed work completes plan tasks mapped to sub-issues (the plan's `## TASK SUB-ISSUES` table), comment the commit hash on each affected sub-issue and check off any of its AC now satisfied. This is what makes the close-time sweep below actually fire at ship time — sub-issue ACs that nothing ticks can never close.
    - **The steps below run only when the closing gate is open (default branch, or `--close`):**
-   - If ALL acceptance criteria are complete, close the issue: `gh issue close <NUMBER> --repo nicholasmartin/claude-workflow-template --comment "All acceptance criteria met in <commit-hash>."`
-   - **After every close, set the board Status yourself:** `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT move its board item. The "item closed → Done" automation is optional UI configuration that may not be enabled; never rely on it. This applies to feature issues and task sub-issues alike.
-   - **After every close, release the ownership claim:** `./.claude/scripts/claim-issue.sh <NUMBER> release` — removes any `worktree:*` label (no-op if unclaimed). Applies to feature issues and task sub-issues alike.
-   - **Task sub-issues:** When closing a feature issue, check if it has task sub-issues:
+   - **Sub-issues close FIRST, then the parent.** Fetch the feature issue's sub-issues:
      ```bash
-     gh api graphql -f query='query { repository(owner: "nicholasmartin", name: "claude-workflow-template") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state } } } } }'
+     gh api graphql -f query='query { repository(owner: "nicholasmartin", name: "claude-workflow-template") { issue(number: <NUMBER>) { subIssues(first: 50) { nodes { number title state labels(first:10){nodes{name}} } } } } }'
      ```
-     Close any open task sub-issues that have all their AC checked off, commenting with the commit hash on each. The same gate applies to sub-issues — on a non-default branch they stay open too.
+     Close any open sub-issue whose AC are all checked off, commenting with the commit hash. `type:ops` sub-issues close only when their operator checklist is genuinely done — never assume it from code landing.
+   - **A feature issue closes only when ALL its sub-issues are closed (`type:ops` included) AND its own Definition of Done boxes are ticked** (for small features without sub-issues: when all its AC are complete). Then: `gh issue close <NUMBER> --repo nicholasmartin/claude-workflow-template --comment "All acceptance criteria met in <commit-hash>."` If sub-issues remain open (usually operator work), comment what remains and leave the parent open — that is correct, not a failure.
+   - **After every close, set the board Status yourself:** `./.claude/scripts/move-issue.sh <NUMBER> Done` — closing an issue does NOT move its board item. The "item closed → Done" automation is optional UI configuration that may not be enabled; never rely on it. This applies to feature issues and task sub-issues alike.
+   - **After every close, release the ownership claim:** `./.claude/scripts/claim-issue.sh <NUMBER> release` — removes any `worktree:*` label (no-op if unclaimed; sub-issues are never claimed, so this is parent-only in practice).
 3. If no open issues are affected, skip this step

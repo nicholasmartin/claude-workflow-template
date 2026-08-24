@@ -29,7 +29,7 @@ This document defines how {{PROJECT_NAME}} manages work through GitHub Issues, P
 
 | Field             | Type          | Values                                  | Purpose                                                             |
 | ----------------- | ------------- | --------------------------------------- | ------------------------------------------------------------------- |
-| **Status**        | Single select | Backlog, Ready, In Progress, In Review, Done | Workflow state ("In Review" = PR open, awaiting review — set by `/pr`, resolved by `/continue` reconcile) |
+| **Status**        | Single select | Backlog, Ready, In Progress, In Review, Done | Workflow state ("In Review" = work complete but not yet landed on the default branch: a PR awaiting review — set by `/pr`, resolved by `/continue` reconcile — or a task sub-issue whose mapped tasks are validated + verified mid-execution, set by `/execute`) |
 | **Phase**         | Single select | Phase 1-N (add new phases as needed)    | Groups work by development phase                                    |
 | **Priority**      | Single select | Low, Medium, High, Critical             | Importance ranking                                                  |
 
@@ -69,14 +69,22 @@ Phase Epic (parent issue)
   |     e.g., #5 "Add user authentication"
   |     - User story
   |     - Context/problem description
-  |     - Acceptance criteria (checkboxes)
+  |     - WITHOUT task sub-issues: full acceptance criteria (checkboxes)
+  |     - WITH task sub-issues: thin Definition of Done only (≤3 cross-cutting
+  |       boxes — suite green, typecheck, docs); the sub-issues ARE the
+  |       decomposed acceptance criteria, and the progress bar tracks them
   |     - Link to plan file (.agents/plans/*.md)
   |     - Labels: phase, type, area (priority is a BOARD FIELD only — no label)
   |     |
-  |     +-- Task Sub-issue (optional, for larger features)
-  |           e.g., "Configure JWT token refresh"
-  |           - Specific implementation steps
-  |           - Validation commands
+  |     +-- Task Sub-issue (for 5+ step features)
+  |           e.g., "Task: Configure JWT token refresh"
+  |           - AUTHORITATIVE acceptance criteria for its slice (checkboxes,
+  |             generated from the plan's task VALIDATE/DONE lines)
+  |           - Mapped to plan tasks via the plan's TASK SUB-ISSUES table
+  |           - Lifecycle: Ready → In Progress (first mapped task starts) →
+  |             In Review (tasks validated + verified) → closed at ship time
+  |           - `Ops:`-titled + `type:ops` labeled = operator/dashboard work:
+  |             executors skip it; the parent can't close until it's done
   |
   +-- Feature Issue (sub-issue)
         ...
@@ -86,7 +94,7 @@ Phase Epic (parent issue)
 
 - **Phase Epic:** Once per development phase. Created when a new phase begins.
 - **Feature Issue:** One per distinct feature or piece of work. Created by `/plan-feature`.
-- **Task Sub-issue:** Optional. Use for larger features where you want granular progress tracking.
+- **Task Sub-issue:** Created by `/plan-feature` for features with 5+ implementation steps (including `type:ops` sub-issues for operator steps). Acceptance criteria live at the lowest level that exists: on sub-issues when they exist, on the feature issue otherwise. A feature issue closes only when all its sub-issues are closed AND its Definition of Done is ticked.
 
 ### Phase-less issues
 
@@ -103,7 +111,7 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 | Category     | Labels                                                                                          | Purpose                       |
 | ------------ | ----------------------------------------------------------------------------------------------- | ----------------------------- |
 | **Phase**    | `phase:1` through `phase:N` (add more as needed)                                                | Which development phase       |
-| **Type**     | `type:feature`, `type:bug`, `type:infra`, `type:polish`, `type:dx`, `type:tech-debt`, `type:docs` | What kind of work           |
+| **Type**     | `type:feature`, `type:bug`, `type:infra`, `type:polish`, `type:dx`, `type:tech-debt`, `type:docs`, `type:ops` | What kind of work (`type:ops` = operator/dashboard step — carried as a task sub-issue, never executed or moved by agents) |
 | **Area**     | (project-specific, add as needed)                                                                | What part of the system       |
 | **Source**   | `source:research`, `source:user-report`, `source:internal`                                      | Where the issue came from     |
 | **Worktree** | `worktree:<name>` (dynamic — created/removed by `claim-issue.sh`, never pre-created)             | Session ownership claim (see section 10) |
@@ -121,26 +129,35 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
    v
 2. /plan-feature creates:
    - Plan file                      .agents/plans/{name}.md
-                                    (detailed implementation guide)
+                                    (detailed implementation guide, incl. the
+                                    TASK SUB-ISSUES mapping table)
    - GitHub feature issue            As sub-issue of Phase Epic
-     with AC checkboxes             (status tracking)
-   - Task sub-issues (optional)     Under the feature issue
-                                    (granular progress)
+                                    (context + thin DoD when sub-issues exist;
+                                    full AC checkboxes otherwise)
+   - Task sub-issues (5+ steps)     Under the feature issue — THE acceptance
+                                    criteria carriers, AC generated from the
+                                    plan's task VALIDATE/DONE lines; operator
+                                    steps become type:ops sub-issues
    |
    v
 3. /execute reads the plan file     Implements step by step
-   - Moves board item to            "In Progress"
-     "In Progress"
-   - Checks off AC checkboxes        As each step completes
-     as steps complete
+   - Moves the FEATURE issue to     "In Progress" (+ parent-only claim)
+   - Moves each sub-issue to        "In Progress" when its first mapped
+                                    task starts (never bulk)
+   - On a sub-issue's last task     Ticks its AC, comments, moves it to
+     validated + verified           "In Review" (done, not yet landed)
+   - type:ops sub-issues            Skipped — reported as outstanding
    |
    v
 4. /commit commits the code
-   - Comments on related issues     With commit hash
-   - Checks off AC checkboxes       In issue body
-   - ON THE DEFAULT BRANCH:         Closes issues if all AC met,
-                                    moves board to Done (move-issue.sh),
-                                    releases claims
+   - Comments on related issues     With commit hash — parents AND the
+                                    sub-issues whose mapped tasks landed
+   - Checks off AC checkboxes       On sub-issues (authoritative) and the
+                                    parent's DoD
+   - ON THE DEFAULT BRANCH:         Closes sub-issues with all AC met, then
+                                    the parent ONLY once all sub-issues are
+                                    closed + DoD ticked; board to Done
+                                    (move-issue.sh), releases claims
    - ON A FEATURE BRANCH:           Never closes — work hasn't landed yet.
                                     Points at the ship step below.
    |
@@ -221,7 +238,7 @@ Rules the script enforces (and that still apply if an issue is ever created manu
 
 | Field    | Field ID                         | Option IDs                                                   |
 | -------- | -------------------------------- | ------------------------------------------------------------ |
-| Status   | `{{STATUS_FIELD_ID}}`            | Backlog: `{{STATUS_BACKLOG_ID}}`, Ready: `{{STATUS_READY_ID}}`, In Progress: `{{STATUS_IN_PROGRESS_ID}}`, Done: `{{STATUS_DONE_ID}}` |
+| Status   | `{{STATUS_FIELD_ID}}`            | Backlog: `{{STATUS_BACKLOG_ID}}`, Ready: `{{STATUS_READY_ID}}`, In Progress: `{{STATUS_IN_PROGRESS_ID}}`, In Review: `{{STATUS_IN_REVIEW_ID}}`, Done: `{{STATUS_DONE_ID}}` |
 | Phase    | `{{PHASE_FIELD_ID}}`             | (populated as phases are created)                             |
 | Priority | `{{PRIORITY_FIELD_ID}}`          | Low: `{{PRIORITY_LOW_ID}}`, Medium: `{{PRIORITY_MEDIUM_ID}}`, High: `{{PRIORITY_HIGH_ID}}`, Critical: `{{PRIORITY_CRITICAL_ID}}` |
 
@@ -263,21 +280,21 @@ Each slash command interacts with GitHub in specific ways:
 
 - **Reads:** PRD files, open issues, project board state
 - **Spawns:** three concurrent research scouts — codebase patterns, external research, testing patterns (see section 9, Subagent Layer)
-- **Creates:** Plan file in `.agents/plans/` (including an Integration Contracts section), GitHub issue (as sub-issue of Phase Epic), optional task sub-issues
-- **Updates:** Adds issue to project board, applies labels, sets board fields (Phase, Priority per section 6)
+- **Creates:** Plan file in `.agents/plans/` (including Integration Contracts and TASK SUB-ISSUES sections), GitHub feature issue (as sub-issue of Phase Epic; thin DoD when sub-issues exist), task sub-issues for 5+ step features (AC generated from the plan's task blocks; operator steps as `type:ops`), then writes the sub-issue numbers back into the plan's mapping table
+- **Updates:** Adds issues to project board, applies labels, sets board fields (Phase, Priority per section 6)
 
 ### /execute
 
 - **Reads:** Plan file (passed as argument)
 - **Spawns:** one task verifier per completed task + a final Observable-Truths verifier (see section 9, Subagent Layer)
-- **Updates:** Moves board item to "In Progress", claims the issue (`claim-issue.sh` — see section 10), checks off AC in issue body as steps complete
-- **Post-execution:** Comments on issue with summary (including verifier verdicts), notes readiness for `/commit`
+- **Updates:** Moves the feature issue to "In Progress" + claims it (parent-only, `claim-issue.sh` — see section 10). Per the plan's TASK SUB-ISSUES map: each sub-issue moves to "In Progress" when its first mapped task starts, and to "In Review" (AC ticked, comment) once its mapped tasks are validated + verified. `type:ops` sub-issues are never touched. Small features without sub-issues: checks off AC on the feature issue as steps complete
+- **Post-execution:** Comments on the feature issue with summary (including verifier verdicts), reports outstanding `type:ops` work, notes readiness for `/commit` — never closes or moves anything to Done
 
 ### /execute-team
 
 - **Reads:** Plan file (passed as argument), especially its Integration Contracts section
 - **Spawns:** teammate agents (2–5) via the experimental agent-teams feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) — the lead distributes contract slices and coordinates; falls back to `/execute` with a clear message when the flag is unset (see section 9, Subagent Layer)
-- **Updates:** Moves board item to "In Progress" via `move-issue.sh`, claims the issue (`claim-issue.sh` — see section 10), checks off AC in issue body
+- **Updates:** Moves the feature issue to "In Progress" via `move-issue.sh`, claims it (parent-only, `claim-issue.sh` — see section 10); the lead drives the same sub-issue lifecycle as `/execute` (In Progress on pickup, AC + "In Review" on verification, `type:ops` skipped)
 - **Post-execution:** Comments a per-agent summary; leaves the issue open — closing happens at the ship step (see section 5)
 
 ### /execute-isolated
@@ -318,7 +335,7 @@ Each slash command interacts with GitHub in specific ways:
 ### /commit
 
 - **Reads:** Open issues list to find related issues
-- **Updates:** Comments on related issues with commit hash, checks off completed AC. **Closing is gated on the default branch:** on it, closes issues when all AC met — and moves each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon), then releases each closed issue's ownership claim via `claim-issue.sh <N> release` (see section 10). On a feature branch: never closes/moves/releases — points at `/merge` / `/pr` instead (escape hatch: `/commit --close`).
+- **Updates:** Comments on related issues with commit hash — parents AND the task sub-issues whose mapped tasks the commit completes — and checks off completed AC on each (sub-issue ACs are what the close-time sweep depends on). **Closing is gated on the default branch:** on it, closes sub-issues with all AC met first, then the parent only once ALL its sub-issues are closed (`type:ops` included) and its Definition of Done is ticked — moving each closed item's board Status to Done via `move-issue.sh` (the "item closed" automation is optional and never relied upon), then releasing each closed issue's ownership claim via `claim-issue.sh <N> release` (see section 10). On a feature branch: never closes/moves/releases — points at `/merge` / `/pr` instead (escape hatch: `/commit --close`).
 - **AI context tracking:** When staged files include AI context assets (`.claude/rules/`, `.claude/commands/`, `.claude/docs/`, `.claude/skills/`, `CLAUDE.md`, `.claude/workflow.md`), a `Context:` section is appended to the commit body describing what changed and why.
 
 ### /merge
@@ -326,7 +343,7 @@ Each slash command interacts with GitHub in specific ways:
 - **Reads:** current branch state; the issue(s) the branch implements (plan file or ask)
 - **Guards:** refuses on the default branch; requires a clean tree; **branch-protection guard** — `gh api repos/<o>/<r>/branches/<default> --jq .protected` (read-access-safe, reflects rulesets; fail-safe: API failure = assume protected) → protected repos are redirected to `/pr` before anything mutates
 - **Does:** `ExitWorktree (keep)` if needed, serialized `git merge --no-ff`, push — the local ship ending
-- **Updates:** comments landing hash, checks off AC, closes issues when AC met, board → Done via `move-issue.sh`, releases claim via `claim-issue.sh`
+- **Updates:** comments landing hash, checks off AC, sweeps sub-issues (closes those with all AC met, each → Done), closes the parent only when all sub-issues are closed + DoD ticked, board → Done via `move-issue.sh`, releases claim via `claim-issue.sh`; open `type:ops` sub-issues correctly keep the parent open
 - **Never:** auto-resolves conflicts, force-pushes, or deletes branches/worktrees without an explicit yes (default: keep — `/continue` GCs later)
 
 ### /pr
@@ -339,7 +356,7 @@ Each slash command interacts with GitHub in specific ways:
 ### /continue
 
 - **Reads:** Project board state, open issues, git status + `git worktree list` + a **merged-PR probe** over local branches (auto-gathered via `.claude/scripts/board-state.sh` + inline bash)
-- **Reconciles (Step 2):** for each local branch whose PR merged upstream — pulls the default branch, board → Done + claim release (always, even when `Closes #N` already closed the issue), then **stack-aware** branch GC: never deletes a branch with local descendants (offers `git rebase --onto` instead); otherwise consent-gated `git branch -D` (squash-merges defeat `-d`; the PR's merged state is the authority), worktree removal first
+- **Reconciles (Step 2):** for each local branch whose PR merged upstream — pulls the default branch, sweeps sub-issues (closes those with all AC met, each → Done; a parent with open `type:ops` sub-issues stays open and is reported), board → Done + claim release for everything closed (always, even when `Closes #N` already closed the issue), then **stack-aware** branch GC: never deletes a branch with local descendants (offers `git rebase --onto` instead); otherwise consent-gated `git branch -D` (squash-merges defeat `-d`; the PR's merged state is the authority), worktree removal first
 - **Purpose:** Resume work by showing current state and suggesting next tasks — claim-aware: surfaces `worktree:*` ownership, skips issues claimed by other sessions, flags stale claims (see section 10)
 
 ### /status

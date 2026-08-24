@@ -35,7 +35,8 @@ Before building, wire this run into the board (same as `/execute`):
 - Ask which issue this plan implements, if it isn't obvious from the plan.
 - Read it: `gh issue view <NUMBER> --repo nicholasmartin/claude-workflow-template`
 - Move the board item to "In Progress": `./.claude/scripts/move-issue.sh <NUMBER> "In Progress"`
-- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user.
+- Claim the issue for this session: `./.claude/scripts/claim-issue.sh <NUMBER> claim` (auto-detects the worktree; `main` in the main checkout). On `CLAIM COLLISION` (exit 3), stop and ask the user. The claim is parent-only — sub-issues are never claimed separately.
+- **Sub-issue map:** load the plan's `## TASK SUB-ISSUES` table (same rules as `/execute` Step 0). The LEAD owns the sub-issue lifecycle: move each sub-issue to "In Progress" when the agent owning its mapped tasks starts them, and — once those tasks validate and verify — tick its AC, comment, and move it to "In Review" (`move-issue.sh`). Never bulk-move; skip `type:ops` rows (operator work, reported as outstanding).
 
 **Never close issues or move them to Done here — only `/commit` closes issues.**
 

@@ -281,6 +281,22 @@ So that <benefit/value>
 - Relevant docs: [Link](url) - Why it matters
 - Design reference: Screenshot or mockup location
 
+## TASK SUB-ISSUES
+
+<The executor's routing table. For features with 5+ implementation steps this
+is filled in AFTER the GitHub sub-issues are created (Report step 2) — each
+sub-issue carries the AUTHORITATIVE acceptance criteria for its slice, and the
+executor moves it Ready → In Progress when its first mapped task starts, then
+→ In Review when all its mapped tasks are validated and verified. `ops` rows
+are operator/dashboard work (`type:ops` label): executors never run or move
+them. For smaller features, state: "No task sub-issues — acceptance criteria
+live on the feature issue." and delete the table.>
+
+| Sub-issue | Type | Plan tasks (STEP-BY-STEP headings, verbatim) | AC summary |
+| --------- | ---- | -------------------------------------------- | ---------- |
+| #NN | impl | "CREATE path/to/service.py", "UPDATE path/to/router.py" | service + registration, tests green |
+| #NN | ops  | — (operator checklist, no plan tasks)         | dashboard/env configured |
+
 ---
 
 ## IMPLEMENTATION PLAN
@@ -403,7 +419,11 @@ Execute every command to ensure zero regressions and 100% feature correctness.
 
 ## ACCEPTANCE CRITERIA
 
-<List specific, measurable criteria that must be met for completion>
+<List specific, measurable criteria that must be met for completion. When task
+sub-issues exist, the per-slice criteria live on the sub-issues (see TASK
+SUB-ISSUES) and are authoritative there; list here only the CROSS-CUTTING
+outcomes that don't decompose (suite green, typecheck green, docs updated) —
+these same lines become the feature issue's thin Definition of Done.>
 
 - [ ] Feature implements all specified functionality
 - [ ] All validation commands pass with zero errors
@@ -499,7 +519,10 @@ After creating the Plan:
 1. **Create or update a GitHub feature issue:**
 
    - If an issue already exists: comment on it with a link to the plan file
-   - If no issue exists, write the body (acceptance criteria as checkboxes) to a temp file, then one call does everything — create, labels, board add, field set, epic link:
+   - If no issue exists, write the body to a temp file, then one call does everything — create, labels, board add, field set, epic link.
+     **Body rule — acceptance criteria live at the lowest level that exists:**
+     - Feature that will get task sub-issues (5+ steps, step 2 below): context (problem, user story, plan link) + a thin **Definition of Done** (max ~3 cross-cutting checkboxes: suite green, typecheck green, docs updated). Do NOT duplicate the sub-issues' criteria here — GitHub's sub-issue progress bar tracks decomposed completion, and duplicated checklists drift.
+     - Smaller feature (under 5 steps, no sub-issues): full acceptance criteria as checkboxes on the feature issue, as before.
      ```bash
      ./.claude/scripts/create-issue.sh \
        --title "<feature title>" \
@@ -512,15 +535,21 @@ After creating the Plan:
 
 2. **Create task sub-issues (for larger features):**
 
-   If the plan has 5+ implementation steps, create task sub-issues under the feature issue for granular progress tracking. Do this automatically without asking. Each task sub-issue maps to a major step in the plan:
+   If the plan has 5+ implementation steps, create task sub-issues under the feature issue. Do this automatically without asking. **The sub-issues are the feature's acceptance criteria** — each one carries the authoritative AC for its slice, generated FROM the plan:
+
+   - Group the plan's STEP-BY-STEP tasks into coherent slices (one sub-issue per major step or phase). Each sub-issue body = a short scope line, the mapped plan task headings, and **acceptance criteria as checkboxes derived from those tasks' VALIDATE/DONE lines** (plus the relevant Observable Truths).
+   - **Operator/non-code steps become sub-issues too** (dashboard work, credential setup, manual smoke tests): title them `Ops: <step>`, label them `type:ops`, body = the operator checklist. Executors never run or move `type:ops` sub-issues, but the parent cannot close until they do — the progress bar stays honest.
 
    ```bash
    ./.claude/scripts/create-issue.sh --title "Task: <step>" --body-file <path> \
      --labels "phase:N,type:infra" --phase "Phase N" --status Ready \
      --parent <feature-issue-number>
+   # operator steps: --title "Ops: <step>" --labels "phase:N,type:ops"
    ```
 
-   This gives automatic progress tracking (the feature issue shows "3/7 complete"). For smaller features (under 5 steps), skip this and just use the AC checkboxes on the feature issue.
+   - **Then write the mapping back into the plan file:** fill the plan's `## TASK SUB-ISSUES` table with the real issue numbers, each row mapping the sub-issue to its plan task headings (verbatim) and a one-line AC summary. This table is how `/execute` knows which sub-issue to move as each task is picked up — a plan with sub-issues but no table is an incomplete plan.
+
+   This gives automatic progress tracking (the feature issue shows "3/7 complete"). For smaller features (under 5 steps), skip this, keep full AC on the feature issue, and state "No task sub-issues" in the plan's TASK SUB-ISSUES section.
 
 3. Provide:
    - Summary of feature and approach
