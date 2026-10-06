@@ -23,8 +23,16 @@ case "$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')" in
   *) usage ;;
 esac
 
-ITEM_ID="$(gh project item-list {{PROJECT_NUMBER}} --owner @me --format json --limit 200 \
-  --jq ".items[] | select(.content.number == $NUM) | .id")"
+# Look up this one issue's board item, not the whole board: `gh project
+# item-list` pulls every item with every field value, and a run of moves
+# trips GitHub's secondary (burst) rate limit. Its --limit also silently
+# missed items once the board outgrew it.
+ITEM_ID="$(gh api graphql \
+  -f query='query($n: Int!) { repository(owner: "{{REPO_OWNER}}", name: "{{REPO_NAME}}") {
+    issue(number: $n) { projectItems(first: 20) { nodes { id project { id } } } } } }' \
+  -F n="$NUM" \
+  --jq '.data.repository.issue.projectItems.nodes[] | select(.project.id == "{{PROJECT_ID}}") | .id')" \
+  || { echo "error: could not look up issue #$NUM (see the gh error above)" >&2; exit 1; }
 if [ -z "$ITEM_ID" ]; then
   echo "error: issue #$NUM is not on project board #{{PROJECT_NUMBER}}" >&2
   exit 1
