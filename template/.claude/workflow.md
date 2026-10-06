@@ -166,7 +166,7 @@ Labels categorize issues for filtering. Applied to individual issues, not epics.
 
    /merge (local ending)            Lands the branch on the default branch
    - branch-protection guard        (protected -> redirected to /pr)
-   - git merge --no-ff, push
+   - git merge --no-ff, never pushes (test locally, push when ready)
    - closes issues, board -> Done, releases claim
    - branch/worktree kept by default (deletion is explicit)
 
@@ -342,7 +342,7 @@ Each slash command interacts with GitHub in specific ways:
 
 - **Reads:** current branch state; the issue(s) the branch implements (plan file or ask)
 - **Guards:** refuses on the default branch; requires a clean tree; **branch-protection guard** — `gh api repos/<o>/<r>/branches/<default> --jq .protected` (read-access-safe, reflects rulesets; fail-safe: API failure = assume protected) → protected repos are redirected to `/pr` before anything mutates
-- **Does:** `ExitWorktree (keep)` if needed, serialized `git merge --no-ff`, push — the local ship ending
+- **Does:** `ExitWorktree (keep)` if needed, serialized `git merge --no-ff` onto the local default branch: the local ship ending. **Never pushes:** the work is tested locally and the user pushes the default branch when ready
 - **Updates:** comments landing hash, checks off AC, sweeps sub-issues (closes those with all AC met, each → Done), closes the parent only when all sub-issues are closed + DoD ticked, board → Done via `move-issue.sh`, releases claim via `claim-issue.sh`; open `type:ops` sub-issues correctly keep the parent open
 - **Never:** auto-resolves conflicts, force-pushes, or deletes branches/worktrees without an explicit yes (default: keep — `/continue` GCs later)
 

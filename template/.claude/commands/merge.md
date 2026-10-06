@@ -6,10 +6,11 @@ disable-model-invocation: true
 
 # Merge: Land the Current Branch Locally
 
-Merge the current feature branch into the default branch, close out the issue,
-and push — the **local ending** of the ship layer (see workflow.md §5). Use it
-when you answer to no one on this repo and the next task needs this work under
-it. The remote ending — open a PR and let someone else merge — is `/pr`. Pick
+Merge the current feature branch into the local default branch and close out
+the issue: the **local ending** of the ship layer (see workflow.md §5). It
+never pushes. The work stays on the local default branch so it can be tested
+locally first, and the user pushes it when ready. Use it when you answer to no
+one on this repo and the next task needs this work under it. The remote ending — open a PR and let someone else merge — is `/pr`. Pick
 per branch, at ship time.
 
 This command is the legitimate closing moment for issues: it is what puts the
@@ -40,7 +41,8 @@ Check, in order:
 
 ## Step 2: Branch-protection guard
 
-**This check runs BEFORE anything is merged, closed, or pushed.**
+**This check runs BEFORE anything is merged or closed.** A protected default
+branch would refuse the later push, so landing there locally is a dead end.
 
 ```bash
 PROTECTED=$(gh api "repos/{{REPO_OWNER}}/{{REPO_NAME}}/branches/$DEFAULT_BRANCH" --jq .protected) || PROTECTED=true
@@ -108,16 +110,18 @@ If AC or sub-issues remain open (usually `type:ops` operator work), leave the
 parent open (comment progress only) and tell the user what's outstanding —
 that is the correct state, not a failure.
 
-## Step 7: Push
+## Step 7: Report (no push)
+
+Nothing is pushed. Tell the user how many commits the local default branch now
+holds that the remote does not:
 
 ```bash
-git push origin "$DEFAULT_BRANCH"
+git rev-list --first-parent --count "origin/$DEFAULT_BRANCH..$DEFAULT_BRANCH"
 ```
 
-If the push is rejected (non-fast-forward, policy), report it and leave the
-local state intact — do not force-push. A policy rejection here usually means
-the repo wanted `/pr`; the local merge can be unwound with
-`git reset --hard origin/$DEFAULT_BRANCH` (the branch still has the work).
+They push when ready: `git push origin "$DEFAULT_BRANCH"`, never forced. A
+non-fast-forward rejection means the remote moved: merge it into the local
+default branch first. A policy rejection means the repo wanted `/pr`.
 
 ## Step 8: Cleanup — explicit, default KEEP
 
@@ -143,3 +147,4 @@ landing.
 - It does not merge when the default branch is protected — it redirects to `/pr`.
 - It does not auto-resolve conflicts, force-push, or rewrite history.
 - It does not delete branches or worktrees without an explicit yes.
+- It does not push. The local default branch is pushed by the user, when ready.

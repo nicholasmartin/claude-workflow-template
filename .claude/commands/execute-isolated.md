@@ -117,8 +117,8 @@ The run is complete. Report the state, then stop:
 
 Then present the two endings:
 
-> Land it with **`/merge`** (merge into the default branch locally, close the
-> issue, push), or open a pull request with **`/pr`** (board → In Review; the
+> Land it with **`/merge`** (merge into the local default branch and close the
+> issue; push it when ready), or open a pull request with **`/pr`** (board → In Review; the
 > issue closes when the PR merges). Pick per branch, at ship time.
 
 Do NOT merge, exit the worktree, delete anything, or release the claim here —
